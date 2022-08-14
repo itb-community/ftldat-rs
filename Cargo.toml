@@ -1,0 +1,18 @@
+[package]
+name = "ftldat"
+version = "0.1.0"
+authors = [
+    "kartoFlane"
+]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "ftldat"
+crate-type = ["cdylib"]
+
+[dependencies]
+mlua = { version = "0.8.3", features = ["lua51", "vendored"] }
+
+#[target.i686-pc-windows-msvc]
