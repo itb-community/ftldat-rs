@@ -14,5 +14,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 mlua = { version = "0.8.3", features = ["lua51", "vendored"] }
+byteorder = { version = "1.4.3" }
 
 #[target.i686-pc-windows-msvc]
