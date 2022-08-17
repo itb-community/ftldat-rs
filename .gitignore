@@ -6,3 +6,4 @@ notes
 *.iml
 .idea
 .vscode
+*.dat
