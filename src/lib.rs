@@ -1,7 +1,6 @@
 use mlua::Lua;
 use mlua::prelude::{LuaResult, LuaTable};
 
-mod ftldat;
 mod error;
 mod lua_exports;
 
