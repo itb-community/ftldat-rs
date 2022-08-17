@@ -68,7 +68,7 @@ impl Entry {
         }
     }
 
-    pub fn bytes(&self) -> Result<ByteBuffer, Error> {
+    pub(crate) fn bytes(&self) -> Result<ByteBuffer, Error> {
         let mut buffer = ByteBuffer::new();
         buffer.set_endian(Endian::LittleEndian);
 

@@ -6,7 +6,7 @@ use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::error::*;
 
-use super::entry::Entry;
+use crate::entry::Entry;
 
 /// Represents the internal structure of an FTLDat package.
 ///

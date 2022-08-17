@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{BufReader, BufWriter};
 
 use crate::error::Error;
-use crate::ftldat::package::Package;
+use crate::package::Package;
 
 /// Convenience struct to hold a reference to a file and exposing methods to
 /// read/write a [Package].

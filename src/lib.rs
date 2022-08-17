@@ -2,7 +2,13 @@ use mlua::Lua;
 use mlua::prelude::{LuaResult, LuaTable};
 
 mod error;
+mod entry;
+mod file;
+mod package;
 mod lua_exports;
+
+pub mod prelude;
+
 
 #[no_mangle]
 pub extern "C" fn luaopen_ftldat(lua_state: *mut mlua::lua_State) -> i32 {
