@@ -1,4 +1,3 @@
-pub use crate::file::DatFile as FtlDatFile;
 pub use crate::package::Package as FtlDatPackage;
 pub use crate::entry::Entry as FtlDatEntry;
 

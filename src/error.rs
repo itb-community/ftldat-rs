@@ -20,7 +20,7 @@ impl Error {
         Error::from(ErrorKind::ReadBytesError { start_pos, failed_at })
     }
 
-    pub fn io_error(source: std::io::Error) -> Error {
+    pub fn io_error(_: std::io::Error) -> Error {
         Error::from(ErrorKind::IOError())
     }
 }

@@ -3,7 +3,6 @@ use mlua::prelude::{LuaResult, LuaTable};
 
 mod error;
 mod entry;
-mod file;
 mod package;
 mod lua_exports;
 

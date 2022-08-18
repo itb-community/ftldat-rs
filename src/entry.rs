@@ -22,6 +22,11 @@ pub struct Entry {
 }
 
 impl Entry {
+    //region <Constructors>
+    /// Constructs an [Entry] from the given `inner_path` and text `content`.
+    ///
+    /// * `inner_path` - path under which the file will be stored within the [Package].
+    /// * `content` - textual content of the file.
     pub fn from_string(inner_path: &str, content: &str) -> Entry {
         Entry {
             inner_path: inner_path.to_string(),
@@ -29,6 +34,10 @@ impl Entry {
         }
     }
 
+    /// Constructs an [Entry] from the given `inner_path` and binary `content`.
+    ///
+    /// * `inner_path` - path under which the file will be stored within the [Package].
+    /// * `content` - binary content of the file.
     pub fn from_bytes(inner_path: &str, content: &[u8]) -> Entry {
         Entry {
             inner_path: inner_path.to_string(),
@@ -36,7 +45,17 @@ impl Entry {
         }
     }
 
-    pub fn from_reader(input: &mut (impl Read + Seek)) -> Result<Entry, Error> {
+    /// Constructs an [Entry] from the given `inner_path` and [File] at the specified `source_path`.
+    ///
+    /// * `inner_path` - path under which the file will be stored within the [Package].
+    /// * `source_path` - path to a file whose content will be stored by the created [Entry].
+    pub fn from_file(inner_path: &str, source_path: &str) -> Result<Entry, Error> {
+        let bytes = std::fs::read(source_path)?;
+        Ok(Entry::from_bytes(inner_path, &bytes))
+    }
+    //endregion
+
+    pub(crate) fn from_reader(input: &mut (impl Read + Seek)) -> Result<Entry, Error> {
         let start_pos = input.stream_position()?;
 
         let mut do_read = || -> Result<Entry, Error> {
@@ -63,7 +82,7 @@ impl Entry {
 
         match do_read() {
             Ok(result) => Ok(result),
-            Err(source) => Err(Error::read_failed(start_pos, input.stream_position()?))
+            Err(_) => Err(Error::read_failed(start_pos, input.stream_position()?))
         }
     }
 
@@ -87,11 +106,5 @@ impl Display for Entry {
             f, "Entry [inner_path: '{}', content_length: {}]",
             self.inner_path, self.content.len()
         )
-    }
-}
-
-impl PartialEq<str> for Entry {
-    fn eq(&self, other: &str) -> bool {
-        self.inner_path.eq(other)
     }
 }
