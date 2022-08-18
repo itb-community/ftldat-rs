@@ -16,6 +16,5 @@ crate-type = ["cdylib"]
 mlua = { version = "0.8.3", features = ["lua51", "vendored"] }
 byteorder = { version = "1.4.3" }
 failure = { version = "0.1.8"}
-bytebuffer-rs = { version = "0.3.1" }
 
 #[target.i686-pc-windows-msvc]

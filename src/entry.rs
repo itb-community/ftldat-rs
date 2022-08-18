@@ -1,8 +1,7 @@
 use std::fmt::{Display, Formatter};
 use std::io::{Read, Seek, Write};
 
-use bytebuffer::{ByteBuffer, Endian};
-use byteorder::{LittleEndian, ReadBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::error::*;
 
@@ -68,20 +67,17 @@ impl Entry {
         }
     }
 
-    pub(crate) fn bytes(&self) -> Result<ByteBuffer, Error> {
-        let mut buffer = ByteBuffer::new();
-        buffer.set_endian(Endian::LittleEndian);
-
+    pub(crate) fn write(&self, output: &mut impl Write) -> Result<(), Error> {
         // Data size
-        buffer.write_u32(self.content.len() as u32);
+        output.write_u32::<LittleEndian>(self.content.len() as u32)?;
         // String length (inner_path)
-        buffer.write_u32(self.inner_path.len() as u32);
+        output.write_u32::<LittleEndian>(self.inner_path.len() as u32)?;
         // Actual string (inner_path)
-        buffer.write_all(self.inner_path.as_bytes())?;
+        output.write_all(self.inner_path.as_bytes())?;
         // Data
-        buffer.write_all(&self.content)?;
+        output.write_all(&self.content)?;
 
-        Ok(buffer)
+        Ok(())
     }
 }
 

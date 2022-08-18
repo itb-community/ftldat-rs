@@ -89,7 +89,7 @@ impl Package {
         let mut entry_offsets = Vec::with_capacity(index_size);
         for entry in self.inner_path_to_entry.values() {
             entry_offsets.push(output.stream_position()? as u32);
-            output.write_all(&entry.bytes()?.to_bytes())?;
+            entry.write(&mut output)?;
         }
 
         // Go back to write offsets to Entries in the index
