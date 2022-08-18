@@ -17,4 +17,7 @@ mlua = { version = "0.8.3", features = ["lua51", "vendored"] }
 byteorder = { version = "1.4.3" }
 failure = { version = "0.1.8"}
 
+[dev-dependencies]
+tempfile = "3.3.0"
+
 #[target.i686-pc-windows-msvc]

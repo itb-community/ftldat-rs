@@ -58,6 +58,7 @@ impl Package {
         let file = File::options()
             .write(true)
             .create(true)
+            .truncate(true)
             .open(target_path)
             .expect("Failed to open the file for writing");
 

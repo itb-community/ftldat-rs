@@ -1,6 +1,11 @@
 #[cfg(test)]
 mod tests {
+    use std::path::Path;
+    use failure::Error;
+
     use ftldat::prelude::*;
+
+    const TEST_DAT_PATH: &str = "./tests-resources/test.dat";
 
     //region <Modification API>
     #[test]
@@ -181,6 +186,96 @@ mod tests {
 
         // Check
         assert_eq!(0, package.len());
+    }
+    //endregion
+
+    //region <I/O API>
+    #[test]
+    fn from_reader_should_correctly_read_ftldat() {
+        // Execute
+        let result = FtlDatPackage::from_file(TEST_DAT_PATH);
+
+        // Check
+        assert!(result.is_ok());
+        let package = result.unwrap();
+        assert_eq!(3, package.len());
+
+        let paths = package.iter()
+            .map(|e| e.inner_path())
+            .collect::<Vec<_>>();
+        assert_eq!("test1.txt", paths[0]);
+        assert_eq!("test2.txt", paths[1]);
+        assert_eq!("test3.txt", paths[2]);
+
+        let contents = package.iter()
+            .map(|e| e.content_string())
+            .collect::<Vec<_>>();
+        assert_eq!("test001", contents[0]);
+        assert_eq!("test002", contents[1]);
+        assert_eq!("test003", contents[2]);
+    }
+
+    #[test]
+    fn write_should_create_file_on_disk_if_missing() {
+        // Prepare
+        let mut package = FtlDatPackage::new();
+        package.put_entry(FtlDatEntry::from("test", "test123"));
+
+        let tmp_file = tempfile::NamedTempFile::new().unwrap();
+        let tmp_path = tmp_file.path().to_str().unwrap();
+
+        // Execute
+        let result = package.to_file(tmp_path);
+
+        // Check
+        assert!(result.is_ok());
+        assert!(tmp_file.path().exists());
+        assert_eq!(27, tmp_file.as_file().metadata().unwrap().len());
+    }
+
+    #[test]
+    fn write_should_update_file_on_disk_if_exists() -> Result<(), Error> {
+        // Prepare
+        let tmp_file = tempfile::NamedTempFile::new().unwrap();
+        let tmp_path = tmp_file.path().to_str().unwrap();
+
+        std::fs::copy(Path::new(TEST_DAT_PATH), tmp_file.path())?;
+
+        let mut package = FtlDatPackage::new();
+        package.put_entry(FtlDatEntry::from("test", "test123"));
+
+        // Execute
+        let result = package.to_file(tmp_path);
+
+        // Check
+        assert!(result.is_ok());
+        assert!(tmp_file.path().exists());
+        assert_eq!(27, tmp_file.as_file().metadata().unwrap().len());
+
+        Ok(())
+    }
+
+    #[test]
+    fn entry_order_should_be_retained_between_writes() -> Result<(), Error> {
+        // Prepare
+        let tmp_file = tempfile::NamedTempFile::new().unwrap();
+        let tmp_path = tmp_file.path().to_str().unwrap();
+
+        let package = FtlDatPackage::from_file(TEST_DAT_PATH).unwrap();
+        let order_before_write = package.entries().collect::<Vec<_>>();
+
+        // Execute
+        package.to_file(tmp_path)?;
+        let package = FtlDatPackage::from_file(tmp_path).unwrap();
+        let order_after_write = package.entries().collect::<Vec<_>>();
+
+        // Check
+        assert_eq!(order_before_write.len(), order_after_write.len());
+        assert_eq!(order_before_write[0].inner_path(), order_after_write[0].inner_path());
+        assert_eq!(order_before_write[1].inner_path(), order_after_write[1].inner_path());
+        assert_eq!(order_before_write[2].inner_path(), order_after_write[2].inner_path());
+
+        Ok(())
     }
     //endregion
 }
