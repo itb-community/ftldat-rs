@@ -10,7 +10,7 @@ edition = "2021"
 
 [lib]
 name = "ftldat"
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
 mlua = { version = "0.8.3", features = ["lua51", "vendored"] }
