@@ -164,6 +164,11 @@ impl Package {
     pub fn len(&self) -> usize {
         self.entries.len()
     }
+
+    /// Returns the number of [Entries](Entry) in this [Package].
+    pub fn entry_count(&self) -> usize {
+        self.len()
+    }
     //endregion
 }
 
