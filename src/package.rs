@@ -2,22 +2,17 @@ use std::collections::btree_map::Keys;
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
-use std::io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write};
+use std::io::{BufReader, BufWriter, Read, Seek, Write};
 use std::slice::Iter;
 
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-
+use crate::dat_reader::DatReader;
+use crate::dat_writer::DatWriter;
 use crate::entry::Entry;
 use crate::error::*;
 
 /// Represents the internal structure of an FTLDat package.
 ///
 /// These packages consist of a list of [Entries](Entry).
-///
-/// Within the FtlDat file on disk, this package is laid out as follows:
-/// - `index_size` := size of the index (1x u32)
-/// - offsets to [Entries](Entry) (`index_size` x u32)
-/// - [Entries](Entry) (`index_size` x [Entry])
 #[derive(Debug)]
 pub struct Package {
     /// Use a Vec as main [Entry] storage; this way we retain the order in which the source
@@ -54,42 +49,11 @@ impl Package {
 
     /// Constructs a [Package] instance from data in the given `input',
     /// consuming it in the process.
-    pub fn from_reader(mut input: (impl Read + Seek)) -> Result<Package, Error> {
-        let start_pos = input.stream_position()?;
-
-        let mut do_read = || -> Result<Package, Error> {
-            let mut result = Package::new();
-            input.seek(SeekFrom::Start(0))?;
-
-            let index_size = input.read_u32::<LittleEndian>()
-                .expect("Failed to read index length") as usize;
-
-            // TODO: Skip offsets and simply read entries until EOF?
-            let mut entry_offsets = Vec::with_capacity(index_size);
-            for _ in 0..index_size {
-                let entry_offset = input.read_u32::<LittleEndian>()?;
-                entry_offsets.push(entry_offset);
-            }
-
-            for entry_offset in entry_offsets {
-                input.seek(SeekFrom::Start(entry_offset as u64))?;
-
-                let entry = Entry::from_reader(&mut input)
-                    .expect("Failed to read Entry");
-
-                result.add_entry(entry)?;
-            }
-
-            Ok(result)
-        };
-
-        match do_read() {
-            Ok(result) => Ok(result),
-            Err(_) => Err(Error::read_failed(start_pos, input.stream_position()?))
-        }
+    pub fn from_reader(input: (impl Read + Seek)) -> Result<Package, Error> {
+        DatReader::read_package(input)
     }
 
-    /// Writes out this [Package] in binary FtlDat format to the specified [File].
+    /// Writes out this [Package] in binary FtlDat format to a file at the specified `target_path`.
     pub fn to_file(&self, target_path: &str) -> Result<(), Error> {
         let file = File::options()
             .write(true)
@@ -102,28 +66,8 @@ impl Package {
 
     /// Writes out this [Package] in binary FtlDat format to the given `output`,
     /// consuming it in the process.
-    pub fn write(&self, mut output: (impl Write + Seek)) -> Result<(), Error> {
-        let index_size = self.inner_path_to_entry_index.len();
-        // Index size
-        output.write_u32::<LittleEndian>(index_size as u32)?;
-
-        // Reserve space for entry offsets
-        output.seek(SeekFrom::Start((4 + 4 * index_size) as u64))?;
-
-        // Write Entries and store the offsets they were written at
-        let mut entry_offsets = Vec::with_capacity(index_size);
-        for entry in self.entries.iter() {
-            entry_offsets.push(output.stream_position()? as u32);
-            entry.write(&mut output)?;
-        }
-
-        // Go back to write offsets to Entries in the index
-        output.seek(SeekFrom::Start(4))?;
-        for offset in entry_offsets {
-            output.write_u32::<LittleEndian>(offset)?;
-        }
-
-        Ok(())
+    pub fn write(&self, output: (impl Write + Seek)) -> Result<(), Error> {
+        DatWriter::write_package(self, output)
     }
     //endregion
 
