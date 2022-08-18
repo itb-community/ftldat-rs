@@ -15,7 +15,8 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 [dependencies]
 mlua = { version = "0.8.3", features = ["lua51", "vendored"] }
 byteorder = { version = "1.4.3" }
-failure = { version = "0.1.8"}
+thiserror = "1.0.32"
+
 
 [dev-dependencies]
 tempfile = "3.3.0"

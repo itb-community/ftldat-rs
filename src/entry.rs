@@ -1,7 +1,5 @@
 use std::fmt::{Display, Formatter};
 
-use crate::error::*;
-
 /// Represents a file entry in FtlDat.
 ///
 /// These entries consist basically only of the file's path within the package (here called
@@ -52,7 +50,7 @@ impl Entry {
     ///
     /// * `inner_path` - path under which the file will be stored within the [Package].
     /// * `source_path` - path to a file whose content will be stored by the created [Entry].
-    pub fn from_file(inner_path: String, source_path: String) -> Result<Entry, Error> {
+    pub fn from_file(inner_path: String, source_path: String) -> Result<Entry, std::io::Error> {
         let bytes = std::fs::read(source_path)?;
         Ok(Entry::from_bytes(inner_path, bytes))
     }

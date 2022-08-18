@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
     use std::path::Path;
-    use failure::Error;
 
     use ftldat::prelude::*;
 
@@ -234,12 +233,13 @@ mod tests {
     }
 
     #[test]
-    fn write_should_update_file_on_disk_if_exists() -> Result<(), Error> {
+    fn write_should_update_file_on_disk_if_exists() {
         // Prepare
         let tmp_file = tempfile::NamedTempFile::new().unwrap();
         let tmp_path = tmp_file.path().to_str().unwrap();
 
-        std::fs::copy(Path::new(TEST_DAT_PATH), tmp_file.path())?;
+        std::fs::copy(Path::new(TEST_DAT_PATH), tmp_file.path())
+            .expect("failed to copy test.dat for testing");
 
         let mut package = FtlDatPackage::new();
         package.put_entry(FtlDatEntry::from("test", "test123"));
@@ -251,12 +251,10 @@ mod tests {
         assert!(result.is_ok());
         assert!(tmp_file.path().exists());
         assert_eq!(27, tmp_file.as_file().metadata().unwrap().len());
-
-        Ok(())
     }
 
     #[test]
-    fn entry_order_should_be_retained_between_writes() -> Result<(), Error> {
+    fn entry_order_should_be_retained_between_writes() {
         // Prepare
         let tmp_file = tempfile::NamedTempFile::new().unwrap();
         let tmp_path = tmp_file.path().to_str().unwrap();
@@ -265,7 +263,8 @@ mod tests {
         let order_before_write = package.entries().collect::<Vec<_>>();
 
         // Execute
-        package.to_file(tmp_path)?;
+        let result = package.to_file(tmp_path);
+        assert!(result.is_ok());
         let package = FtlDatPackage::from_file(tmp_path).unwrap();
         let order_after_write = package.entries().collect::<Vec<_>>();
 
@@ -274,8 +273,6 @@ mod tests {
         assert_eq!(order_before_write[0].inner_path(), order_after_write[0].inner_path());
         assert_eq!(order_before_write[1].inner_path(), order_after_write[1].inner_path());
         assert_eq!(order_before_write[2].inner_path(), order_after_write[2].inner_path());
-
-        Ok(())
     }
     //endregion
 }

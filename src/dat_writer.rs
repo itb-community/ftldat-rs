@@ -3,13 +3,12 @@ use std::io::{Seek, SeekFrom, Write};
 use byteorder::{LittleEndian, WriteBytesExt};
 
 use crate::entry::Entry;
-use crate::error::Error;
 use crate::package::Package;
 
 pub(crate) struct DatWriter {}
 
 impl DatWriter {
-    pub(crate) fn write_package(package: &Package, mut output: (impl Write + Seek)) -> Result<(), Error> {
+    pub(crate) fn write_package(package: &Package, mut output: (impl Write + Seek)) -> Result<(), std::io::Error> {
         let index_size = package.len();
         // Index size
         output.write_u32::<LittleEndian>(index_size as u32)?;
@@ -33,7 +32,7 @@ impl DatWriter {
         Ok(())
     }
 
-    pub(crate) fn write_entry(entry: &Entry, output: &mut impl Write) -> Result<(), Error> {
+    pub(crate) fn write_entry(entry: &Entry, output: &mut impl Write) -> Result<(), std::io::Error> {
         // Data size
         output.write_u32::<LittleEndian>(entry.content.len() as u32)?;
         // String length (inner_path)

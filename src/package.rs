@@ -39,7 +39,7 @@ impl Package {
 
     //region <Input/Output>
     /// Reads and creates a [Package] instance out of the specified [File].
-    pub fn from_file(source_path: &str) -> Result<Package, Error> {
+    pub fn from_file(source_path: &str) -> Result<Package, ReadPackageError> {
         let file = File::options()
             .read(true)
             .open(source_path)
@@ -49,12 +49,12 @@ impl Package {
 
     /// Constructs a [Package] instance from data in the given `input',
     /// consuming it in the process.
-    pub fn from_reader(input: (impl Read + Seek)) -> Result<Package, Error> {
+    pub fn from_reader(input: (impl Read + Seek)) -> Result<Package, ReadPackageError> {
         DatReader::read_package(input)
     }
 
     /// Writes out this [Package] in binary FtlDat format to a file at the specified `target_path`.
-    pub fn to_file(&self, target_path: &str) -> Result<(), Error> {
+    pub fn to_file(&self, target_path: &str) -> Result<(), std::io::Error> {
         let file = File::options()
             .write(true)
             .create(true)
@@ -67,7 +67,7 @@ impl Package {
 
     /// Writes out this [Package] in binary FtlDat format to the given `output`,
     /// consuming it in the process.
-    pub fn write(&self, output: (impl Write + Seek)) -> Result<(), Error> {
+    pub fn write(&self, output: (impl Write + Seek)) -> Result<(), std::io::Error> {
         DatWriter::write_package(self, output)
     }
     //endregion
@@ -75,9 +75,9 @@ impl Package {
     //region <API>
     /// Adds the specified `entry` into this [Package]. Returns an [Error] if this [Package]
     /// already contains an [Entry] under the same `inner_path` as the specified `entry`.
-    pub fn add_entry(&mut self, entry: Entry) -> Result<(), Error> {
+    pub fn add_entry(&mut self, entry: Entry) -> Result<(), InnerPathAlreadyExistsError> {
         if self.inner_path_to_entry_index.contains_key(&entry.inner_path) {
-            return Err(Error::inner_path_already_exists(entry.inner_path));
+            return Err(InnerPathAlreadyExistsError(entry.inner_path));
         }
 
         self.append_new_entry(entry);

@@ -33,11 +33,10 @@ result = ftldat.add(1, 2) -- will return 3
 
 Considering that this project served me as a way to familiarize myself with Rust, there's bound to be a lot of room for
 improvement. In no particular order:
-- Error handling
+- Error handling. Tried to use `thiserror`, a popular crate for error-handling, but I don't feel particularly confident about it.
 - Ownership of strings, I just used heap-allocated Strings and copied them left and right
 - Naming of functions, following proper Rust conventions (`from`, `into`, etc.)
-- Serialization of structs to bytes can certainly be handled better (though I like keeping in-memory and on-disk 
-representations separate)
+- Serialization of structs to bytes can probably be handled better (though I like keeping in-memory and on-disk representations separate)
 
 # Attributions
 
