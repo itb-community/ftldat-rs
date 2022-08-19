@@ -1,4 +1,3 @@
-use std::collections::btree_map::Keys;
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
@@ -8,6 +7,7 @@ use std::slice::Iter;
 use crate::dat_reader::DatReader;
 use crate::dat_writer::DatWriter;
 use crate::entry::Entry;
+use crate::entry::EntryFrom;
 use crate::error::*;
 
 /// Represents the internal structure of an FTLDat package.
@@ -75,28 +75,13 @@ impl Package {
     //region <API>
     /// Adds the specified `entry` into this [Package]. Returns an [Error] if this [Package]
     /// already contains an [Entry] under the same `inner_path` as the specified `entry`.
-    pub fn add_entry(&mut self, entry: Entry) -> Result<(), InnerPathAlreadyExistsError> {
+    pub(crate) fn add_entry_internal(&mut self, entry: Entry) -> Result<(), InnerPathAlreadyExistsError> {
         if self.inner_path_to_entry_index.contains_key(&entry.inner_path) {
             return Err(InnerPathAlreadyExistsError(entry.inner_path));
         }
 
         self.append_new_entry(entry);
         Ok(())
-    }
-
-    /// Puts the specified [Entry] into this [Package], overwriting any [Entry] that may have
-    /// been previously stored under the same `inner_path`.
-    pub fn put_entry(&mut self, entry: Entry) {
-        let maybe_index = self.inner_path_to_entry_index.get(&entry.inner_path);
-        match maybe_index {
-            Some(index) => {
-                self.entries.remove(*index);
-                self.entries.insert(*index, entry);
-            }
-            None => {
-                self.append_new_entry(entry);
-            }
-        }
     }
 
     fn append_new_entry(&mut self, entry: Entry) {
@@ -124,20 +109,8 @@ impl Package {
     /// Checks if this [Package] has any [Entry] associated with the given `inner_path`.
     ///
     /// Returns `true` if an [Entry] is found, `false` otherwise.
-    pub fn entry_exists(&mut self, inner_path: &str) -> bool {
+    pub fn entry_exists(&self, inner_path: &str) -> bool {
         self.inner_path_to_entry_index.contains_key(inner_path)
-    }
-
-    /// Retrieves an entry by the `inner_path` under which it is stored in this [Package].
-    ///
-    /// Returns a reference to the [Entry] if found, or `None` if the `inner_path` doesn't
-    /// have any entry associated with it.
-    pub fn entry_by_path(&self, inner_path: &str) -> Option<&Entry> {
-        let maybe_index = self.inner_path_to_entry_index.get(inner_path);
-        match maybe_index {
-            Some(index) => self.entries.get(*index),
-            None => None
-        }
     }
 
     /// Removes all [Entries](Entry) from this [Package].
@@ -147,18 +120,21 @@ impl Package {
     }
 
     /// Returns an iterator over this [Package]'s [Entries](Entry).
-    pub fn iter(&self) -> Iter<Entry> {
+    pub(crate) fn iter(&self) -> Iter<Entry> {
         self.entries.iter()
     }
 
     /// Alias for [Package::iter]
-    pub fn entries(&self) -> Iter<Entry> {
+    pub(crate) fn entries(&self) -> Iter<Entry> {
         self.iter()
     }
 
-    /// Returns an iterator over `inner_path`s in this [Package].
-    pub fn inner_paths(&self) -> Keys<'_, String, usize> {
-        self.inner_path_to_entry_index.keys().into_iter()
+    /// Returns a view of `inner_path`s in this [Package], reflecting the internal order of
+    /// entries within the package..
+    pub fn inner_paths(&self) -> Vec<String> {
+        self.iter()
+            .map(|entry|  entry.inner_path().to_owned())
+            .collect::<Vec<String>>()
     }
 
     /// Returns the number of [Entries](Entry) in this [Package].
@@ -176,5 +152,115 @@ impl Package {
 impl Display for Package {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Entry [entries: '{}']", self.len())
+    }
+}
+
+pub trait AddEntry<T> {
+    fn add_entry(&mut self, inner_path: String, content: T) -> Result<(), InnerPathAlreadyExistsError>;
+}
+
+impl AddEntry<String> for Package {
+    /// Adds a new entry to this [Package] with the specified `inner_path` and text `content`.
+    /// Returns an [InnerPathAlreadyExistsError] if this [Package] already contains an [Entry] under
+    /// the specified `inner_path`.
+    ///
+    /// * `inner_path` - path under which the file will be stored within the [Package].
+    /// * `content` - textual content of the file.
+    fn add_entry(&mut self, inner_path: String, content: String) -> Result<(), InnerPathAlreadyExistsError> {
+        if self.inner_path_to_entry_index.contains_key(&inner_path) {
+            return Err(InnerPathAlreadyExistsError(inner_path.to_owned()));
+        }
+
+        self.append_new_entry(Entry::entry_from(inner_path, content));
+        Ok(())
+    }
+}
+
+impl AddEntry<Vec<u8>> for Package {
+    fn add_entry(&mut self, inner_path: String, content: Vec<u8>) -> Result<(), InnerPathAlreadyExistsError> {
+        if self.inner_path_to_entry_index.contains_key(&inner_path) {
+            return Err(InnerPathAlreadyExistsError(inner_path.to_owned()));
+        }
+
+        self.append_new_entry(Entry::entry_from(inner_path, content));
+        Ok(())
+    }
+}
+
+pub trait PutEntry<T> {
+    fn put_entry(&mut self, inner_path: String, content: T);
+}
+
+impl PutEntry<String> for Package {
+    /// Puts the specified text `content` into this [Package] under the specified `inner_path`,
+    /// overwriting any entry that may have been previously stored under that `inner_path`.
+    fn put_entry(&mut self, inner_path: String, content: String) {
+        let maybe_index = self.inner_path_to_entry_index.get(&inner_path);
+        let entry = Entry::entry_from(inner_path, content);
+        match maybe_index {
+            Some(index) => {
+                self.entries.remove(*index);
+                self.entries.insert(*index, entry);
+            }
+            None => {
+                self.append_new_entry(entry);
+            }
+        }
+    }
+}
+
+impl PutEntry<Vec<u8>> for Package {
+    /// Puts the specified binary `content` into this [Package] under the specified `inner_path`,
+    /// overwriting any entry that may have been previously stored under that `inner_path`.
+    fn put_entry(&mut self, inner_path: String, content: Vec<u8>) {
+        let maybe_index = self.inner_path_to_entry_index.get(&inner_path);
+        let entry = Entry::entry_from(inner_path, content);
+        match maybe_index {
+            Some(index) => {
+                self.entries.remove(*index);
+                self.entries.insert(*index, entry);
+            }
+            None => {
+                self.append_new_entry(entry);
+            }
+        }
+    }
+}
+
+pub trait ContentByPath<T> {
+    fn content_by_path(&self, inner_path: &str) -> Option<T>;
+}
+
+impl ContentByPath<String> for Package {
+    /// Retrieves content under the `inner_path` in this [Package].
+    ///
+    /// Returns a copy of the text content if found, or `None` if the `inner_path` doesn't
+    /// have any entry associated with it.
+    fn content_by_path(&self, inner_path: &str) -> Option<String> {
+        let maybe_index = self.inner_path_to_entry_index.get(inner_path);
+        match maybe_index {
+            Some(index) => {
+                self.entries.get(*index)
+                    .map(|entry| entry.content_string())
+            }
+            None => None
+        }
+    }
+}
+
+impl ContentByPath<Vec<u8>> for Package {
+    /// Retrieves content under the `inner_path` in this [Package].
+    ///
+    /// Returns a copy of the binary content if found, or `None` if the `inner_path` doesn't
+    /// have any entry associated with it.
+    fn content_by_path(&self, inner_path: &str) -> Option<Vec<u8>> {
+        let maybe_index = self.inner_path_to_entry_index.get(inner_path);
+        match maybe_index {
+            Some(index) => {
+                self.entries.get(*index)
+                    .map(|entry| entry.content_bytes().to_vec())
+            }
+            None => None
+        }
     }
 }

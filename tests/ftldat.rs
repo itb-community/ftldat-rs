@@ -22,14 +22,16 @@ mod tests {
         let content = "test";
 
         // Execute
-        let result = package.add_entry(FtlDatEntry::from(inner_path, content));
+        let result = package.add_entry(
+            inner_path.to_owned(),
+            content.to_owned(),
+        );
 
         // Check
         assert!(result.is_ok());
         assert_eq!(1, package.len());
         assert!(package.entry_exists(inner_path));
-        assert_eq!(content, package.entry_by_path(inner_path)
-            .map(|e| e.content_string())
+        assert_eq!(content, package.content_by_path(inner_path)
             .unwrap_or("".to_string()));
     }
 
@@ -40,19 +42,24 @@ mod tests {
         let inner_path = "test";
         let content1 = "test";
 
-        let result = package.add_entry(FtlDatEntry::from(inner_path, content1));
+        let result = package.add_entry(
+            inner_path.to_owned(),
+            content1.to_owned(),
+        );
         assert!(result.is_ok());
 
         // Execute
         let content2 = "test123";
-        let result = package.add_entry(FtlDatEntry::from(inner_path, content2));
+        let result = package.add_entry(
+            inner_path.to_owned(),
+            content2.to_owned(),
+        );
 
         // Check
         assert!(result.is_err());
         assert_eq!(1, package.len());
         assert!(package.entry_exists(inner_path));
-        assert_eq!(content1, package.entry_by_path(inner_path)
-            .map(|e| e.content_string())
+        assert_eq!(content1, package.content_by_path(inner_path)
             .unwrap_or("".to_string()));
     }
 
@@ -64,13 +71,12 @@ mod tests {
         let content = "test";
 
         // Execute
-        package.put_entry(FtlDatEntry::from(inner_path, content));
+        package.put_entry(inner_path.to_owned(), content.to_owned());
 
         // Check
         assert_eq!(1, package.len());
         assert!(package.entry_exists(inner_path));
-        assert_eq!(content, package.entry_by_path(inner_path)
-            .map(|e| e.content_string())
+        assert_eq!(content, package.content_by_path(inner_path)
             .unwrap_or("".to_string()));
     }
 
@@ -81,17 +87,16 @@ mod tests {
         let inner_path = "test";
         let content1 = "test";
 
-        package.put_entry(FtlDatEntry::from(inner_path, content1));
+        package.put_entry(inner_path.to_owned(), content1.to_owned());
 
         // Execute
         let content2 = "test123";
-        package.put_entry(FtlDatEntry::from(inner_path, content2));
+        package.put_entry(inner_path.to_owned(), content2.to_owned());
 
         // Check
         assert_eq!(1, package.len());
         assert!(package.entry_exists(inner_path));
-        assert_eq!(content2, package.entry_by_path(inner_path)
-            .map(|e| e.content_string())
+        assert_eq!(content2, package.content_by_path(inner_path)
             .unwrap_or("".to_string()));
     }
 
@@ -109,7 +114,7 @@ mod tests {
         // Prepare
         let mut package = FtlDatPackage::new();
         let inner_path = "test";
-        package.put_entry(FtlDatEntry::from(inner_path, "test"));
+        package.put_entry(inner_path.to_owned(), "test".to_owned());
 
         // Execute
         let result = package.remove_entry(inner_path);
@@ -122,7 +127,7 @@ mod tests {
     #[test]
     fn entry_exists_should_return_false_when_innerpath_is_free() {
         // Prepare
-        let mut package = FtlDatPackage::new();
+        let package = FtlDatPackage::new();
 
         let result = package.entry_exists("test");
 
@@ -134,7 +139,7 @@ mod tests {
         // Prepare
         let mut package = FtlDatPackage::new();
         let inner_path = "test";
-        package.put_entry(FtlDatEntry::from(inner_path, "test"));
+        package.put_entry(inner_path.to_owned(), "test".to_owned());
 
         // Execute
         let result = package.entry_exists(inner_path);
@@ -145,28 +150,27 @@ mod tests {
     }
 
     #[test]
-    fn entry_by_path_should_return_reference_to_entry_when_exists() {
+    fn content_by_path_should_return_content_when_exists() {
         // Prepare
         let mut package = FtlDatPackage::new();
         let inner_path = "test";
-        package.put_entry(FtlDatEntry::from(inner_path, "test"));
+        package.put_entry(inner_path.to_owned(), "test".to_owned());
 
         // Execute
-        let result = package.entry_by_path(inner_path);
+        let result: Option<String> = package.content_by_path(inner_path);
 
         // Check
         assert!(result.is_some());
-        let entry = result.unwrap();
-        assert_eq!(inner_path, entry.inner_path());
-        assert_eq!("test", entry.content_string());
+        let content = result.unwrap();
+        assert_eq!("test", content);
     }
 
     #[test]
-    fn entry_by_path_should_return_none_when_doesnt_exist() {
+    fn content_by_path_should_return_none_when_doesnt_exist() {
         // Prepare
         let package = FtlDatPackage::new();
 
-        let result = package.entry_by_path("test");
+        let result: Option<String> = package.content_by_path("test");
 
         assert!(result.is_none());
     }
@@ -175,9 +179,9 @@ mod tests {
     fn clear_should_remove_all_entries_from_package() {
         // Prepare
         let mut package = FtlDatPackage::new();
-        package.put_entry(FtlDatEntry::from("test1", "test"));
-        package.put_entry(FtlDatEntry::from("test2", "test"));
-        package.put_entry(FtlDatEntry::from("test3", "test"));
+        package.put_entry("test1".to_owned(), "test".to_owned());
+        package.put_entry("test2".to_owned(), "test".to_owned());
+        package.put_entry("test3".to_owned(), "test".to_owned());
         assert_eq!(3, package.len());
 
         // Execute
@@ -199,16 +203,14 @@ mod tests {
         let package = result.unwrap();
         assert_eq!(3, package.len());
 
-        let paths = package.iter()
-            .map(|e| e.inner_path())
-            .collect::<Vec<_>>();
+        let paths = package.inner_paths();
         assert_eq!("test1.txt", paths[0]);
         assert_eq!("test2.txt", paths[1]);
         assert_eq!("test3.txt", paths[2]);
 
-        let contents = package.iter()
-            .map(|e| e.content_string())
-            .collect::<Vec<_>>();
+        let contents = paths.iter()
+            .map(|path| package.content_by_path(path).unwrap())
+            .collect::<Vec<String>>();
         assert_eq!("test001", contents[0]);
         assert_eq!("test002", contents[1]);
         assert_eq!("test003", contents[2]);
@@ -218,7 +220,7 @@ mod tests {
     fn write_should_create_file_on_disk_if_missing() {
         // Prepare
         let mut package = FtlDatPackage::new();
-        package.put_entry(FtlDatEntry::from("test", "test123"));
+        package.put_entry("test".to_owned(), "test123".to_owned());
 
         let tmp_file = tempfile::NamedTempFile::new().unwrap();
         let tmp_path = tmp_file.path().to_str().unwrap();
@@ -242,7 +244,7 @@ mod tests {
             .expect("failed to copy test.dat for testing");
 
         let mut package = FtlDatPackage::new();
-        package.put_entry(FtlDatEntry::from("test", "test123"));
+        package.put_entry("test".to_owned(), "test123".to_owned());
 
         // Execute
         let result = package.to_file(tmp_path);
@@ -260,19 +262,19 @@ mod tests {
         let tmp_path = tmp_file.path().to_str().unwrap();
 
         let package = FtlDatPackage::from_file(TEST_DAT_PATH).unwrap();
-        let order_before_write = package.entries().collect::<Vec<_>>();
+        let order_before_write = package.inner_paths();
 
         // Execute
         let result = package.to_file(tmp_path);
         assert!(result.is_ok());
         let package = FtlDatPackage::from_file(tmp_path).unwrap();
-        let order_after_write = package.entries().collect::<Vec<_>>();
+        let order_after_write = package.inner_paths();
 
         // Check
         assert_eq!(order_before_write.len(), order_after_write.len());
-        assert_eq!(order_before_write[0].inner_path(), order_after_write[0].inner_path());
-        assert_eq!(order_before_write[1].inner_path(), order_after_write[1].inner_path());
-        assert_eq!(order_before_write[2].inner_path(), order_after_write[2].inner_path());
+        assert_eq!(order_before_write[0], order_after_write[0]);
+        assert_eq!(order_before_write[1], order_after_write[1]);
+        assert_eq!(order_before_write[2], order_after_write[2]);
     }
     //endregion
 }

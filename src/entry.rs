@@ -5,56 +5,23 @@ use std::fmt::{Display, Formatter};
 /// These entries consist basically only of the file's path within the package (here called
 /// `inner_path`), and the file's binary content.
 #[derive(Debug)]
-pub struct Entry {
+pub(crate) struct Entry {
     pub(crate) inner_path: String,
     pub(crate) content: Vec<u8>,
 }
 
 impl Entry {
-    //region <Constructors>
-    /// Constructs an [Entry] from the given `inner_path` and text `content`.
-    ///
-    /// * `inner_path` - path under which the file will be stored within the [Package].
-    /// * `content` - textual content of the file.
-    pub fn from_string(inner_path: String, content: String) -> Entry {
-        Entry {
-            inner_path,
-            content: Vec::from(content),
-        }
-    }
-
-    /// Constructs an [Entry] from the given `inner_path` and binary `content`.
-    ///
-    /// * `inner_path` - path under which the file will be stored within the [Package].
-    /// * `content` - binary content of the file.
-    pub fn from_bytes(inner_path: String, content: Vec<u8>) -> Entry {
-        Entry {
-            inner_path,
-            content,
-        }
-    }
-
     /// Constructs an [Entry] from the given `inner_path` and text `content`. Copies the strings
     /// to have the Entry gain ownership over them. This method is primarily for testing convenience.
     ///
     /// * `inner_path` - path under which the file will be stored within the [Package].
     /// * `content` - textual content of the file.
-    pub fn from(inner_path: &str, content: &str) -> Entry {
+    pub fn _from(inner_path: &str, content: &str) -> Entry {
         Entry {
             inner_path: inner_path.to_owned(),
             content: Vec::from(content.to_owned()),
         }
     }
-
-    /// Constructs an [Entry] from the given `inner_path` and [File] at the specified `source_path`.
-    ///
-    /// * `inner_path` - path under which the file will be stored within the [Package].
-    /// * `source_path` - path to a file whose content will be stored by the created [Entry].
-    pub fn from_file(inner_path: String, source_path: String) -> Result<Entry, std::io::Error> {
-        let bytes = std::fs::read(source_path)?;
-        Ok(Entry::from_bytes(inner_path, bytes))
-    }
-    //endregion
 
     /// Returns the `inner_path` of this entry.
     pub fn inner_path(&self) -> &str {
@@ -78,5 +45,35 @@ impl Display for Entry {
             f, "Entry [inner_path: '{}', content_length: {}]",
             self.inner_path, self.content.len()
         )
+    }
+}
+
+pub(crate) trait EntryFrom<T> {
+    fn entry_from(inner_path: String, content: T) -> Entry;
+}
+
+impl EntryFrom<String> for Entry {
+    /// Constructs an [Entry] from the given `inner_path` and text `content`.
+    ///
+    /// * `inner_path` - path under which the file will be stored within the [Package].
+    /// * `content` - textual content of the file.
+    fn entry_from(inner_path: String, content: String) -> Entry {
+        Entry {
+            inner_path,
+            content: Vec::from(content),
+        }
+    }
+}
+
+impl EntryFrom<Vec<u8>> for Entry {
+    /// Constructs an [Entry] from the given `inner_path` and binary `content`.
+    ///
+    /// * `inner_path` - path under which the file will be stored within the [Package].
+    /// * `content` - binary content of the file.
+    fn entry_from(inner_path: String, content: Vec<u8>) -> Entry {
+        Entry {
+            inner_path,
+            content,
+        }
     }
 }
