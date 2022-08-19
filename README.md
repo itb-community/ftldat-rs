@@ -1,23 +1,21 @@
 # FTLDat-rs
 
 Rust implementation of FTLDat - a simple library for unpacking and repacking of .dat files, which are used
-by the games Faster than Light and Into the Breach.
+by the games [Faster than Light](https://subsetgames.com/ftl.html) and [Into the Breach](https://subsetgames.com/itb.html).
 
-The library is intended to be loaded and interfaced with via Lua scripts.
+This library is intended to be loaded and interfaced with via Lua scripts.
 
 
 # Building
 
 Building assumes you have Rust set up. If not, see here: https://www.rust-lang.org/learn/get-started.
 
-Into the Breach runs as a 32-bit application, so the library has to be compiled with 32-bit target.
-
 1. Open a terminal in the project's root directory.
 2. Add `i686-pc-windows-msvc` target with the command `rustup target add i686-pc-windows-msvc`.
-3. After that, you can rebuild the library by running the command `cargo build --lib --release --target=i686-pc-windows-msvc`.
+3. After that, you can build the library anytime by running the `build.sh` script.
+    - the script just has to set a couple vars and call cargo, so you can easily modify it to suit your preferences.
 
 After that, the compiled .dll will be available in `./target/i686-pc-windows-msvc/release/ftldat.dll`.
-
 
 # Usage
 
@@ -30,6 +28,18 @@ pack = ftldat.read_package("path/to/resource.dat")
 pack.add_text_entry("img/some/file.txt", "the file's content")
 pack.to_file("path/to/resource.dat")
 ```
+
+# Troubleshooting
+
+The build process is a little finicky.
+
+Into the Breach runs as a 32-bit application, so the library has to be compiled with 32-bit target.
+
+Also, the library has to be built in `mlua`'s [module mode](https://github.com/khvzak/mlua#module-mode), otherwise the
+game crashes during exit. The crash doesn't *actually* cause any issues, as far as I could tell, but it does leave sort
+of a sour aftertaste after getting everything else to work. Building in module mode under Windows requires linking to
+a Lua dll (as mentioned in the link). This is what the `lua` directory and `build.sh` script are for - if you don't want
+to run the script file, you'll need to set the variables from the script in your desired environment.
 
 # Areas to Improve
 
