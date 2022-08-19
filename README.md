@@ -22,11 +22,28 @@ After that, the compiled .dll will be available in `./target/i686-pc-windows-msv
 Load the library in your lua script:
 
 ```lua
+-- load the dll - this exposes `ftldat` global variable,
+-- with functions `new_package` and `read_package`
 package.loadlib("ftldat.dll", "luaopen_ftldat")()
 
+-- read a .dat file into memory
 pack = ftldat.read_package("path/to/resource.dat")
-pack.add_text_entry("img/some/file.txt", "the file's content")
-pack.to_file("path/to/resource.dat")
+
+-- add an entry - this can fail if the entry already exists
+pack:add_text_entry("img/some/file.txt", "the file's content")
+
+-- alternatively, put an entry, which can overwrite an existing entry
+pack:put_text_entry("img/some/file.txt", "another content")
+
+-- can also read an entry's content:
+content = pack:content_text_by_path("img/some/file.txt")
+
+-- write out the package from memory to a file
+pack:to_file("path/to/resource.dat")
+
+-- binary content can be read/written, too. This is done in the form of byte arrays,
+-- which in lua take the shape of tables of numbers.
+pack:put_binary_entry("img/image.png", { 1, 2, 3, 4, 5 })
 ```
 
 # Troubleshooting
