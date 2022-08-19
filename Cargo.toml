@@ -13,12 +13,9 @@ name = "ftldat"
 crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
-mlua = { version = "0.8.3", features = ["lua51", "vendored"] }
+mlua = { version = "0.8.3", features = ["lua51", "module"] }
 byteorder = { version = "1.4.3" }
 thiserror = "1.0.32"
 
-
 [dev-dependencies]
 tempfile = "3.3.0"
-
-#[target.i686-pc-windows-msvc]
