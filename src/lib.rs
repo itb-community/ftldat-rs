@@ -1,5 +1,4 @@
 use mlua::Lua;
-use mlua::prelude::{LuaResult, LuaTable};
 
 mod error;
 mod entry;
