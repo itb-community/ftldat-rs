@@ -4,7 +4,7 @@ use std::sync::Arc;
 use mlua::{Lua, UserDataMethods};
 use mlua::prelude::{LuaError, LuaResult, LuaTable, LuaUserData};
 
-use crate::prelude::{AddFtlDatEntry, FtlDatPackage, PutFtlDatEntry};
+use crate::prelude::{AddFtlDatEntry, FtlDatContentByPath, FtlDatPackage, PutFtlDatEntry};
 
 /// Build the module's exports table, governing what is exposed to Lua.
 pub fn init(lua: &Lua) -> LuaResult<LuaTable> {
@@ -54,6 +54,16 @@ impl LuaUserData for FtlDatPackage {
 
         methods.add_method_mut("put_binary_entry", |_, this, (path, content): (String, Vec<u8>)| {
             Ok(this.put_entry(path, content))
+        });
+
+        methods.add_method("content_text_by_path", |_, this, (path,): (String,)| {
+            let result: Option<String> = this.content_by_path(&path);
+            Ok(result)
+        });
+
+        methods.add_method("content_binary_by_path", |_, this, (path,): (String,)| {
+            let result: Option<Vec<u8>> = this.content_by_path(&path);
+            Ok(result)
         });
 
         methods.add_method_mut("remove", |_, this, (path, ): (String, )| {
