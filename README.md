@@ -26,7 +26,9 @@ Load the library in your lua script:
 ```lua
 package.loadlib("ftldat.dll", "luaopen_ftldat")()
 
-result = ftldat.add(1, 2) -- will return 3
+pack = ftldat.read_package("path/to/resource.dat")
+pack.add_text_entry("img/some/file.txt", "the file's content")
+pack.to_file("path/to/resource.dat")
 ```
 
 # Areas to Improve
