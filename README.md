@@ -8,18 +8,43 @@ This library is intended to be loaded and interfaced with via Lua scripts.
 
 # Building
 
-Building assumes you have Rust set up. If not, see here: https://www.rust-lang.org/learn/get-started.
+This section assumes you have Rust set up with MSVC. If not, see here: https://www.rust-lang.org/learn/get-started.
+
+Building for release mode with MINGW should also be possible, and potentially a bit simpler, but I didn't want to try
+getting MINGW set up yet.
+
+### Development
+
+For development, the build process is very simple: 
 
 1. Open a terminal in the project's root directory.
-2. Add `i686-pc-windows-msvc` target with the command `rustup target add i686-pc-windows-msvc`.
-3. After that, you can build the library anytime by running the `build.sh` script.
-    - the script just has to set a couple vars and call cargo, so you can easily modify it to suit your preferences.
+2. Run `cargo build`.
 
-After that, the compiled .dll will be available in `./target/i686-pc-windows-msvc/release/ftldat.dll`.
+### Release
+
+For release (as in, getting a .dll that Lua can interface with), the build process is quite a bit more involved.
+
+1. Change configuration to build the library in module mode.
+   1. Go to `Cargo.toml`.
+   2. Find the `[dependencies]` section.
+   3. Find the entry for `mlua` and replace `"vendored"` with `"module"`.
+      - Or just comment/uncomment the prepared entries.
+   - For explanation why this is needed, see the [Troubleshooting](#troubleshooting) section below.
+2. Open a terminal in the project's root directory.
+3. (First time only) Add `i686-pc-windows-msvc` target with the command `rustup target add i686-pc-windows-msvc`.
+4. Specify environment variables:
+   - `LUA_INC=lua/include` - path to Lua headers
+   - `LUA_LIB=lua/lua5.1` - path to Lua .lib file
+   - `LUA_LIB_NAME=lua/lua5.1` - same path as in `LUA_LIB`
+5. Run `cargo build --lib --release --target=i686-pc-windows-msvc`
+
+Steps 4 and 5 are automated in the form of `build.sh` script.
+
+Compiled .dll will be available in `./target/i686-pc-windows-msvc/release/ftldat.dll`.
 
 # Usage
 
-Load the library in your lua script:
+Load the library in your Lua script:
 
 ```lua
 -- load the dll - this exposes `ftldat` global variable,
@@ -42,21 +67,23 @@ content = pack:content_text_by_path("img/some/file.txt")
 pack:to_file("path/to/resource.dat")
 
 -- binary content can be read/written, too. This is done in the form of byte arrays,
--- which in lua take the shape of tables of numbers.
+-- which in Lua take the shape of tables of numbers.
 pack:put_binary_entry("img/image.png", { 1, 2, 3, 4, 5 })
 ```
 
 # Troubleshooting
 
-The build process is a little finicky.
+The build process for getting a .dll that can interface with Lua is a little finicky.
 
 Into the Breach runs as a 32-bit application, so the library has to be compiled with 32-bit target.
 
 Also, the library has to be built in `mlua`'s [module mode](https://github.com/khvzak/mlua#module-mode), otherwise the
 game crashes during exit. The crash doesn't *actually* cause any issues, as far as I could tell, but it does leave sort
-of a sour aftertaste after getting everything else to work. Building in module mode under Windows requires linking to
-a Lua dll (as mentioned in the link). This is what the `lua` directory and `build.sh` script are for - if you don't want
-to run the script file, you'll need to set the variables from the script in your desired environment.
+of a sour aftertaste after getting everything else to work. It also has the advantage of producing a smaller binary.
+
+Building in module mode under Windows requires linking to a Lua dll (as mentioned in the link). 
+This is what the `lua` directory and `build.sh` script are for - if you don't want to run the script file, you'll need
+to set the variables from the script in your desired environment.
 
 # Areas to Improve
 
