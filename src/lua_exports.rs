@@ -38,30 +38,30 @@ impl LuaUserData for FtlDatPackage {
                 .map_err(external_lua_error)
         });
 
-        methods.add_method_mut("add_text_entry", |_, this, (path, content): (String, String)| {
+        methods.add_method_mut("add_entry_from_string", |_, this, (path, content): (String, String)| {
             this.add_entry(path, content)
                 .map_err(external_lua_error)
         });
 
-        methods.add_method_mut("add_binary_entry", |_, this, (path, content): (String, Vec<u8>)| {
+        methods.add_method_mut("add_entry_from_byte_array", |_, this, (path, content): (String, Vec<u8>)| {
             this.add_entry(path, content)
                 .map_err(external_lua_error)
         });
 
-        methods.add_method_mut("put_text_entry", |_, this, (path, content): (String, String)| {
+        methods.add_method_mut("put_entry_from_string", |_, this, (path, content): (String, String)| {
             Ok(this.put_entry(path, content))
         });
 
-        methods.add_method_mut("put_binary_entry", |_, this, (path, content): (String, Vec<u8>)| {
+        methods.add_method_mut("put_entry_from_byte_array", |_, this, (path, content): (String, Vec<u8>)| {
             Ok(this.put_entry(path, content))
         });
 
-        methods.add_method("content_text_by_path", |_, this, (path,): (String,)| {
+        methods.add_method("read_content_as_string", |_, this, (path, ): (String, )| {
             let result: Option<String> = this.content_by_path(&path);
             Ok(result)
         });
 
-        methods.add_method("content_binary_by_path", |_, this, (path,): (String,)| {
+        methods.add_method("read_content_as_byte_array", |_, this, (path, ): (String, )| {
             let result: Option<Vec<u8>> = this.content_by_path(&path);
             Ok(result)
         });
