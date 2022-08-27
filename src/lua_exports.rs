@@ -48,11 +48,24 @@ impl LuaUserData for FtlDatPackage {
                 .map_err(external_lua_error)
         });
 
+        methods.add_method_mut("add_entry_from_file", |_, this, (path, source_path): (String, String)| {
+            std::fs::read(source_path)
+                .map(|content| this.add_entry(path, content).unwrap())
+                .map_err(external_lua_error)
+        });
+
         methods.add_method_mut("put_entry_from_string", |_, this, (path, content): (String, String)| {
             Ok(this.put_entry(path, content))
         });
 
         methods.add_method_mut("put_entry_from_byte_array", |_, this, (path, content): (String, Vec<u8>)| {
+            Ok(this.put_entry(path, content))
+        });
+
+        methods.add_method_mut("put_entry_from_file", |_, this, (path, source_path): (String, String)| {
+            let content = std::fs::read(source_path)
+                .map_err(external_lua_error)?;
+
             Ok(this.put_entry(path, content))
         });
 
