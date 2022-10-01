@@ -101,6 +101,11 @@ impl LuaUserData for FtlDatPackage {
 
         methods.add_method("entry_count", |_, this, ()| {
             Ok(this.entry_count())
-        })
+        });
+
+        methods.add_method("extract", |_, this, (path, ): (String, )| {
+            this.extract(path)
+                .map_err(external_lua_error)
+        });
     }
 }

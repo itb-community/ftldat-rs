@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
+    use tempfile::tempdir;
 
     use ftldat::prelude::*;
 
@@ -277,4 +278,22 @@ mod tests {
         assert_eq!(order_before_write[2], order_after_write[2]);
     }
     //endregion
+
+    #[test]
+    fn should_extract_all_contents() {
+        // Prepare
+        let tmp_file = tempdir().unwrap();
+        let tmp_path = tmp_file.path().to_str().unwrap();
+
+        let package = FtlDatPackage::from_file(TEST_DAT_PATH).unwrap();
+
+        // Execute
+        let result = package.extract(tmp_path);
+
+        // Check
+        assert!(result.is_ok());
+        assert!(PathBuf::from(tmp_path).join("test1.txt").exists());
+        assert!(PathBuf::from(tmp_path).join("test2.txt").exists());
+        assert!(PathBuf::from(tmp_path).join("test3.txt").exists());
+    }
 }

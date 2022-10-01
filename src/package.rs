@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Read, Seek, Write};
+use std::path::Path;
 use std::slice::Iter;
 
 use crate::dat_reader::DatReader;
@@ -234,6 +235,28 @@ impl Package {
     /// Returns the number of [Entries](Entry) in this [Package].
     pub fn entry_count(&self) -> usize {
         self.len()
+    }
+
+    pub fn extract<P: AsRef<Path>>(&self, destination_path: P) -> Result<(), std::io::Error> {
+        for entry in self.iter() {
+            let entry_dest_path = destination_path.as_ref().join(entry.inner_path());
+
+            std::fs::create_dir_all(&entry_dest_path.parent().unwrap())?;
+            let mut file = File::options()
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .open(&entry_dest_path)
+                .expect(&format!("Failed to open the file for writing: {}", &entry_dest_path.to_str().unwrap()));
+
+            let result = file.write(entry.content_bytes());
+
+            if let Err(error) = result {
+                return Err(error)
+            }
+        }
+
+        Ok(())
     }
     //endregion
 }
