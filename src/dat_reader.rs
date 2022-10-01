@@ -2,7 +2,7 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-use crate::entry::{Entry, EntryFrom};
+use crate::entry::{Entry};
 use crate::error::{ReadEntryError, ReadPackageError};
 use crate::package::Package;
 
@@ -54,6 +54,6 @@ impl DatReader {
         let mut buffer = vec![0_u8; content_length as usize];
         input.read_exact(&mut buffer)?;
 
-        Ok(Entry::entry_from(inner_path, buffer))
+        Ok(Entry::from_byte_array(inner_path, buffer))
     }
 }

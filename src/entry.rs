@@ -11,15 +11,25 @@ pub(crate) struct Entry {
 }
 
 impl Entry {
-    /// Constructs an [Entry] from the given `inner_path` and text `content`. Copies the strings
-    /// to have the Entry gain ownership over them. This method is primarily for testing convenience.
+    /// Constructs an [Entry] from the given `inner_path` and text `content`.
     ///
     /// * `inner_path` - path under which the file will be stored within the [Package].
     /// * `content` - textual content of the file.
-    pub fn _from(inner_path: &str, content: &str) -> Entry {
+    pub fn from_string<P: AsRef<str>, C: AsRef<str> + Into<Vec<u8>>>(inner_path: P, content: C) -> Entry {
         Entry {
-            inner_path: inner_path.to_owned(),
-            content: Vec::from(content.to_owned()),
+            inner_path: inner_path.as_ref().to_owned(),
+            content: content.into(),
+        }
+    }
+
+    /// Constructs an [Entry] from the given `inner_path` and binary `content`.
+    ///
+    /// * `inner_path` - path under which the file will be stored within the [Package].
+    /// * `content` - binary content of the file.
+    pub fn from_byte_array<P: AsRef<str>>(inner_path: P, content: Vec<u8>) -> Entry {
+        Entry {
+            inner_path: inner_path.as_ref().to_owned(),
+            content,
         }
     }
 
@@ -45,35 +55,5 @@ impl Display for Entry {
             f, "Entry [inner_path: '{}', content_length: {}]",
             self.inner_path, self.content.len()
         )
-    }
-}
-
-pub(crate) trait EntryFrom<T> {
-    fn entry_from(inner_path: String, content: T) -> Entry;
-}
-
-impl EntryFrom<String> for Entry {
-    /// Constructs an [Entry] from the given `inner_path` and text `content`.
-    ///
-    /// * `inner_path` - path under which the file will be stored within the [Package].
-    /// * `content` - textual content of the file.
-    fn entry_from(inner_path: String, content: String) -> Entry {
-        Entry {
-            inner_path,
-            content: Vec::from(content),
-        }
-    }
-}
-
-impl EntryFrom<Vec<u8>> for Entry {
-    /// Constructs an [Entry] from the given `inner_path` and binary `content`.
-    ///
-    /// * `inner_path` - path under which the file will be stored within the [Package].
-    /// * `content` - binary content of the file.
-    fn entry_from(inner_path: String, content: Vec<u8>) -> Entry {
-        Entry {
-            inner_path,
-            content,
-        }
     }
 }

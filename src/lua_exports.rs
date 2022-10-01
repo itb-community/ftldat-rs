@@ -4,7 +4,7 @@ use std::sync::Arc;
 use mlua::{Lua, UserDataMethods};
 use mlua::prelude::{LuaError, LuaResult, LuaTable, LuaUserData};
 
-use crate::prelude::{AddFtlDatEntry, FtlDatContentByPath, FtlDatPackage, PutFtlDatEntry};
+use crate::prelude::{FtlDatPackage};
 
 /// Build the module's exports table, governing what is exposed to Lua.
 pub fn init(lua: &Lua) -> LuaResult<LuaTable> {
@@ -39,43 +39,43 @@ impl LuaUserData for FtlDatPackage {
         });
 
         methods.add_method_mut("add_entry_from_string", |_, this, (path, content): (String, String)| {
-            this.add_entry(path, content)
+            this.add_entry_from_string(path, content)
                 .map_err(external_lua_error)
         });
 
         methods.add_method_mut("add_entry_from_byte_array", |_, this, (path, content): (String, Vec<u8>)| {
-            this.add_entry(path, content)
+            this.add_entry_from_byte_array(path, content)
                 .map_err(external_lua_error)
         });
 
         methods.add_method_mut("add_entry_from_file", |_, this, (path, source_path): (String, String)| {
             std::fs::read(source_path)
-                .map(|content| this.add_entry(path, content).unwrap())
+                .map(|content| this.add_entry_from_byte_array(path, content).unwrap())
                 .map_err(external_lua_error)
         });
 
         methods.add_method_mut("put_entry_from_string", |_, this, (path, content): (String, String)| {
-            Ok(this.put_entry(path, content))
+            Ok(this.put_entry_from_string(path, content))
         });
 
         methods.add_method_mut("put_entry_from_byte_array", |_, this, (path, content): (String, Vec<u8>)| {
-            Ok(this.put_entry(path, content))
+            Ok(this.put_entry_from_byte_array(path, content))
         });
 
         methods.add_method_mut("put_entry_from_file", |_, this, (path, source_path): (String, String)| {
             let content = std::fs::read(source_path)
                 .map_err(external_lua_error)?;
 
-            Ok(this.put_entry(path, content))
+            Ok(this.put_entry_from_byte_array(path, content))
         });
 
         methods.add_method("read_content_as_string", |_, this, (path, ): (String, )| {
-            let result: Option<String> = this.content_by_path(&path);
+            let result: Option<String> = this.string_content_by_path(&path);
             Ok(result)
         });
 
         methods.add_method("read_content_as_byte_array", |_, this, (path, ): (String, )| {
-            let result: Option<Vec<u8>> = this.content_by_path(&path);
+            let result: Option<Vec<u8>> = this.byte_array_content_by_path(&path);
             Ok(result)
         });
 

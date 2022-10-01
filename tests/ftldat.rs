@@ -22,16 +22,16 @@ mod tests {
         let content = "test";
 
         // Execute
-        let result = package.add_entry(
-            inner_path.to_owned(),
-            content.to_owned(),
+        let result = package.add_entry_from_string(
+            inner_path,
+            content,
         );
 
         // Check
         assert!(result.is_ok());
         assert_eq!(1, package.len());
         assert!(package.entry_exists(inner_path));
-        assert_eq!(content, package.content_by_path(inner_path)
+        assert_eq!(content, package.string_content_by_path(inner_path)
             .unwrap_or("".to_string()));
     }
 
@@ -42,24 +42,24 @@ mod tests {
         let inner_path = "test";
         let content1 = "test";
 
-        let result = package.add_entry(
-            inner_path.to_owned(),
-            content1.to_owned(),
+        let result = package.add_entry_from_string(
+            inner_path,
+            content1,
         );
         assert!(result.is_ok());
 
         // Execute
         let content2 = "test123";
-        let result = package.add_entry(
-            inner_path.to_owned(),
-            content2.to_owned(),
+        let result = package.add_entry_from_string(
+            inner_path,
+            content2,
         );
 
         // Check
         assert!(result.is_err());
         assert_eq!(1, package.len());
         assert!(package.entry_exists(inner_path));
-        assert_eq!(content1, package.content_by_path(inner_path)
+        assert_eq!(content1, package.string_content_by_path(inner_path)
             .unwrap_or("".to_string()));
     }
 
@@ -71,12 +71,12 @@ mod tests {
         let content = "test";
 
         // Execute
-        package.put_entry(inner_path.to_owned(), content.to_owned());
+        package.put_entry_from_string(inner_path, content);
 
         // Check
         assert_eq!(1, package.len());
         assert!(package.entry_exists(inner_path));
-        assert_eq!(content, package.content_by_path(inner_path)
+        assert_eq!(content, package.string_content_by_path(inner_path)
             .unwrap_or("".to_string()));
     }
 
@@ -87,16 +87,16 @@ mod tests {
         let inner_path = "test";
         let content1 = "test";
 
-        package.put_entry(inner_path.to_owned(), content1.to_owned());
+        package.put_entry_from_string(inner_path, content1);
 
         // Execute
         let content2 = "test123";
-        package.put_entry(inner_path.to_owned(), content2.to_owned());
+        package.put_entry_from_string(inner_path, content2);
 
         // Check
         assert_eq!(1, package.len());
         assert!(package.entry_exists(inner_path));
-        assert_eq!(content2, package.content_by_path(inner_path)
+        assert_eq!(content2, package.string_content_by_path(inner_path)
             .unwrap_or("".to_string()));
     }
 
@@ -114,7 +114,7 @@ mod tests {
         // Prepare
         let mut package = FtlDatPackage::new();
         let inner_path = "test";
-        package.put_entry(inner_path.to_owned(), "test".to_owned());
+        package.put_entry_from_string(inner_path, "test");
 
         // Execute
         let result = package.remove_entry(inner_path);
@@ -139,7 +139,7 @@ mod tests {
         // Prepare
         let mut package = FtlDatPackage::new();
         let inner_path = "test";
-        package.put_entry(inner_path.to_owned(), "test".to_owned());
+        package.put_entry_from_string(inner_path, "test");
 
         // Execute
         let result = package.entry_exists(inner_path);
@@ -154,10 +154,10 @@ mod tests {
         // Prepare
         let mut package = FtlDatPackage::new();
         let inner_path = "test";
-        package.put_entry(inner_path.to_owned(), "test".to_owned());
+        package.put_entry_from_string(inner_path, "test");
 
         // Execute
-        let result: Option<String> = package.content_by_path(inner_path);
+        let result: Option<String> = package.string_content_by_path(inner_path);
 
         // Check
         assert!(result.is_some());
@@ -170,7 +170,7 @@ mod tests {
         // Prepare
         let package = FtlDatPackage::new();
 
-        let result: Option<String> = package.content_by_path("test");
+        let result: Option<String> = package.string_content_by_path("test");
 
         assert!(result.is_none());
     }
@@ -179,9 +179,9 @@ mod tests {
     fn clear_should_remove_all_entries_from_package() {
         // Prepare
         let mut package = FtlDatPackage::new();
-        package.put_entry("test1".to_owned(), "test".to_owned());
-        package.put_entry("test2".to_owned(), "test".to_owned());
-        package.put_entry("test3".to_owned(), "test".to_owned());
+        package.put_entry_from_string("test1", "test");
+        package.put_entry_from_string("test2", "test");
+        package.put_entry_from_string("test3", "test");
         assert_eq!(3, package.len());
 
         // Execute
@@ -209,7 +209,7 @@ mod tests {
         assert_eq!("test3.txt", paths[2]);
 
         let contents = paths.iter()
-            .map(|path| package.content_by_path(path).unwrap())
+            .map(|path| package.string_content_by_path(path).unwrap())
             .collect::<Vec<String>>();
         assert_eq!("test001", contents[0]);
         assert_eq!("test002", contents[1]);
@@ -220,7 +220,7 @@ mod tests {
     fn write_should_create_file_on_disk_if_missing() {
         // Prepare
         let mut package = FtlDatPackage::new();
-        package.put_entry("test".to_owned(), "test123".to_owned());
+        package.put_entry_from_string("test", "test123");
 
         let tmp_file = tempfile::NamedTempFile::new().unwrap();
         let tmp_path = tmp_file.path().to_str().unwrap();
@@ -244,7 +244,7 @@ mod tests {
             .expect("failed to copy test.dat for testing");
 
         let mut package = FtlDatPackage::new();
-        package.put_entry("test".to_owned(), "test123".to_owned());
+        package.put_entry_from_string("test", "test123");
 
         // Execute
         let result = package.to_file(tmp_path);
