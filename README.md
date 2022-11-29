@@ -1,7 +1,7 @@
 # FTLDat-rs
 
 Rust implementation of FTLDat - a simple library for unpacking and repacking of .dat files, which are used
-by the games [Faster than Light](https://subsetgames.com/ftl.html) and [Into the Breach](https://subsetgames.com/itb.html).
+by the games [Into the Breach](https://subsetgames.com/itb.html) and [Faster than Light](https://subsetgames.com/ftl.html) (until version 1.6.1).
 
 This library is intended to be loaded and interfaced with via Lua scripts.
 
