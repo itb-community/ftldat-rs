@@ -3,7 +3,6 @@ mod test_dat_reader {
     use std::path::Path;
 
     use ftldat::prelude::{DatPackageReader, DatPackageWriter, Package};
-    use ftldat_rs::prelude::{DatPackageReader, DatPackageWriter, Package};
 
     const TEST_DAT_PATH: &str = "./tests-resources/test.dat";
 

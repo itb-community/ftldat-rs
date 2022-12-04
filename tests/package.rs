@@ -4,8 +4,7 @@ mod test_package {
 
     use tempfile::tempdir;
 
-    use ftldat::prelude::*;
-    use ftldat::prelude::DatPackageReader;
+    use ftldat::prelude::{DatPackageReader, Package};
 
     const TEST_DAT_PATH: &str = "./tests-resources/test.dat";
 
