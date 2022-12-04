@@ -10,13 +10,9 @@ edition = "2021"
 
 [lib]
 name = "ftldat"
-crate-type = ["cdylib", "staticlib", "rlib"]
+crate-type = ["lib"]
 
 [dependencies]
-# for release builds, use module mode:
-#mlua = { version = "0.8.3", features = ["lua51", "module"] }
-# for development builds, use vendored mode:
-mlua = { version = "0.8.3", features = ["lua51", "vendored"] }
 byteorder = { version = "1.4.3" }
 thiserror = "1.0.32"
 
