@@ -7,8 +7,6 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use crate::prelude::{Entry, Package};
 use crate::shared::error::{ReadEntryError, ReadPackageError};
 
-pub struct DatPackageReader {}
-
 /// Dat packages have the following structure:
 /// - `index_size` := size of the index (1x u32)
 /// - offsets to [Entries](Entry) (`index_size` x u32)
@@ -19,6 +17,8 @@ pub struct DatPackageReader {}
 /// - `str_len` := file name length (1x u32)
 /// - file name (`str_len` x u8)
 /// - file content (`data_size` x u8)
+pub struct DatPackageReader {}
+
 impl DatPackageReader {
     /// Reads and creates a [Package] instance out of the specified [File], using .dat format.
     pub fn read_package_from_path<P: AsRef<Path>>(source_path: P) -> Result<Package, ReadPackageError> {
