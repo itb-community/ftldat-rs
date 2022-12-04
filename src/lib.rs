@@ -1,8 +1,4 @@
-mod error;
-mod entry;
-mod package;
-mod dat_reader;
-mod dat_writer;
-mod lua_exports;
+mod shared;
+mod dat_package;
 
 pub mod prelude;

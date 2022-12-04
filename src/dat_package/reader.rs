@@ -1,19 +1,31 @@
-use std::io::{Read, Seek, SeekFrom};
+use std::fs::File;
+use std::io::{BufReader, Read, Seek, SeekFrom};
+use std::path::Path;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-use crate::entry::{Entry};
-use crate::error::{ReadEntryError, ReadPackageError};
-use crate::package::Package;
+use crate::prelude::{Entry, Package};
+use crate::shared::error::{ReadEntryError, ReadPackageError};
 
-pub(crate) struct DatReader {}
+pub struct DatPackageReader {}
 
-impl DatReader {
-    /// Within the FtlDat file on disk, this package is laid out as follows:
-    /// - `index_size` := size of the index (1x u32)
-    /// - offsets to [Entries](Entry) (`index_size` x u32)
-    /// - [Entries](Entry) (`index_size` x [Entry])
-    pub(crate) fn read_package(mut input: (impl Read + Seek)) -> Result<Package, ReadPackageError> {
+/// Dat packages have the following structure:
+/// - `index_size` := size of the index (1x u32)
+/// - offsets to [Entries](Entry) (`index_size` x u32)
+/// - [Entries](Entry) (`index_size` x [Entry])
+impl DatPackageReader {
+    /// Reads and creates a [Package] instance out of the specified [File], using .dat format.
+    pub fn read_package_from_path<P: AsRef<Path>>(source_path: P) -> Result<Package, ReadPackageError> {
+        let file = File::options()
+            .read(true)
+            .open(source_path)
+            .expect("Failed to open the file for reading");
+        DatPackageReader::read_package_from_input(BufReader::new(file))
+    }
+
+    /// Constructs a [Package] instance from data in the given `input',
+    /// consuming it in the process.
+    pub fn read_package_from_input(mut input: (impl Read + Seek)) -> Result<Package, ReadPackageError> {
         let mut result = Package::new();
         input.seek(SeekFrom::Start(0))?;
 
@@ -29,7 +41,7 @@ impl DatReader {
         for entry_offset in entry_offsets {
             input.seek(SeekFrom::Start(entry_offset as u64))?;
 
-            let entry = DatReader::read_entry(&mut input)?;
+            let entry = DatPackageReader::read_entry(&mut input)?;
 
             result.add_entry_internal(entry)
                 .map_err(ReadPackageError::ProcessPackageError)?;
@@ -38,12 +50,12 @@ impl DatReader {
         Ok(result)
     }
 
-    /// Within the FtlDat file on disk, these entries are laid out as follows:
+    /// Within the .dat file on disk, these entries are laid out as follows:
     /// - `data_size` := file content length (1x u32)
     /// - `str_len` := file name length (1x u32)
     /// - file name (`str_len` x u8)
     /// - file content (`data_size` x u8)
-    pub(crate) fn read_entry(input: &mut (impl Read + Seek)) -> Result<Entry, ReadEntryError> {
+    fn read_entry(input: &mut (impl Read + Seek)) -> Result<Entry, ReadEntryError> {
         let content_length = input.read_u32::<LittleEndian>()?;
         let inner_path_length = input.read_u32::<LittleEndian>()?;
 

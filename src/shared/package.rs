@@ -1,14 +1,12 @@
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
-use std::io::{BufReader, BufWriter, Read, Seek, Write};
+use std::io::{Write};
 use std::path::Path;
 use std::slice::Iter;
 
-use crate::dat_reader::DatReader;
-use crate::dat_writer::DatWriter;
-use crate::entry::Entry;
-use crate::error::*;
+use crate::shared::entry::Entry;
+use crate::shared::error::*;
 
 /// Represents the internal structure of an FTLDat package.
 ///
@@ -34,41 +32,6 @@ impl Package {
     /// Constructs a new empty [Package] instance, initialized with a capacity for 2048 entries.
     pub fn new() -> Package {
         Package::with_capacity(2048)
-    }
-    //endregion
-
-    //region <Input/Output>
-    /// Reads and creates a [Package] instance out of the specified [File].
-    pub fn from_file(source_path: &str) -> Result<Package, ReadPackageError> {
-        let file = File::options()
-            .read(true)
-            .open(source_path)
-            .expect("Failed to open the file for reading");
-        Package::from_reader(BufReader::new(file))
-    }
-
-    /// Constructs a [Package] instance from data in the given `input',
-    /// consuming it in the process.
-    pub fn from_reader(input: (impl Read + Seek)) -> Result<Package, ReadPackageError> {
-        DatReader::read_package(input)
-    }
-
-    /// Writes out this [Package] in binary FtlDat format to a file at the specified `target_path`.
-    pub fn to_file(&self, target_path: &str) -> Result<(), std::io::Error> {
-        let file = File::options()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(target_path)
-            .expect("Failed to open the file for writing");
-
-        self.write(BufWriter::new(file))
-    }
-
-    /// Writes out this [Package] in binary FtlDat format to the given `output`,
-    /// consuming it in the process.
-    pub fn write(&self, output: (impl Write + Seek)) -> Result<(), std::io::Error> {
-        DatWriter::write_package(self, output)
     }
     //endregion
 
@@ -252,7 +215,7 @@ impl Package {
             let result = file.write(entry.content_bytes());
 
             if let Err(error) = result {
-                return Err(error)
+                return Err(error);
             }
         }
 
