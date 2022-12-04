@@ -5,7 +5,7 @@ use std::path::Path;
 use byteorder::{LittleEndian, ReadBytesExt};
 
 use crate::{Entry, Package};
-use crate::shared::error::{ReadEntryError, ReadPackageError};
+use crate::error::{ReadEntryError, ReadPackageError};
 
 // Dat packages have the following structure:
 // - `index_size` := size of the index (1x u32)

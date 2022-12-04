@@ -4,8 +4,7 @@ use std::path::Path;
 
 use byteorder::{LittleEndian, WriteBytesExt};
 
-use crate::shared::entry::Entry;
-use crate::shared::package::Package;
+use crate::{Entry, Package};
 
 /// Writes out this [Package] in binary FtlDat format to a file at the specified `target_path`.
 pub fn write_package_to_path<P: AsRef<Path>>(package: Package, target_path: P) -> Result<(), std::io::Error> {
