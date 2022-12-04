@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod test_dat_reader {
-    use ftldat::prelude::dat_package;
+    use ftldat::dat_package;
 
     const TEST_DAT_PATH: &str = "./tests-resources/test.dat";
 

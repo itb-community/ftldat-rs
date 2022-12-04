@@ -1,4 +1,6 @@
 mod shared;
-mod dat_package;
+pub mod dat_package;
 
-pub mod prelude;
+pub(crate) use crate::shared::entry::Entry as Entry;
+pub use crate::shared::error::*;
+pub use crate::shared::package::Package as Package;

@@ -4,7 +4,7 @@ use std::path::Path;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-use crate::prelude::{Entry, Package};
+use crate::{Entry, Package};
 use crate::shared::error::{ReadEntryError, ReadPackageError};
 
 // Dat packages have the following structure:

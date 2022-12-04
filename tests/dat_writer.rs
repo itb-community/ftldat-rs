@@ -2,7 +2,7 @@
 mod test_dat_writer {
     use std::path::Path;
 
-    use ftldat::prelude::{Package, dat_package};
+    use ftldat::{Package, dat_package};
 
     const TEST_DAT_PATH: &str = "./tests-resources/test.dat";
 
