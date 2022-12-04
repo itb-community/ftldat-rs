@@ -13,6 +13,12 @@ pub struct DatPackageReader {}
 /// - `index_size` := size of the index (1x u32)
 /// - offsets to [Entries](Entry) (`index_size` x u32)
 /// - [Entries](Entry) (`index_size` x [Entry])
+///
+/// [Entries](Entry) have the following structure:
+/// - `data_size` := file content length (1x u32)
+/// - `str_len` := file name length (1x u32)
+/// - file name (`str_len` x u8)
+/// - file content (`data_size` x u8)
 impl DatPackageReader {
     /// Reads and creates a [Package] instance out of the specified [File], using .dat format.
     pub fn read_package_from_path<P: AsRef<Path>>(source_path: P) -> Result<Package, ReadPackageError> {
@@ -50,11 +56,6 @@ impl DatPackageReader {
         Ok(result)
     }
 
-    /// Within the .dat file on disk, these entries are laid out as follows:
-    /// - `data_size` := file content length (1x u32)
-    /// - `str_len` := file name length (1x u32)
-    /// - file name (`str_len` x u8)
-    /// - file content (`data_size` x u8)
     fn read_entry(input: &mut (impl Read + Seek)) -> Result<Entry, ReadEntryError> {
         let content_length = input.read_u32::<LittleEndian>()?;
         let inner_path_length = input.read_u32::<LittleEndian>()?;
