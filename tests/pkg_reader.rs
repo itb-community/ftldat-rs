@@ -1,13 +1,13 @@
 #[cfg(test)]
-mod test_dat_reader {
-    use ftldat::dat_package;
+mod test_pkg_reader {
+    use ftldat::{pkg_package};
 
-    const TEST_DAT_PATH: &str = "./tests-resources/test.dat";
+    const TEST_DAT_PATH: &str = "./tests-resources/test.pkg";
 
     #[test]
-    fn reader_should_correctly_read_package() {
+    fn reader_correctly_reads_test_package() {
         // Execute
-        let result = dat_package::read_from_path(TEST_DAT_PATH);
+        let result = pkg_package::read_from_path(TEST_DAT_PATH);
         if result.is_err() {
             panic!("{:?}", result.unwrap_err());
         }

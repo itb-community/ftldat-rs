@@ -183,7 +183,7 @@ impl Package {
     }
 
     /// Returns a view of `inner_path`s in this [Package], reflecting the internal order of
-    /// entries within the package..
+    /// entries within the package.
     pub fn inner_paths(&self) -> Vec<String> {
         self.iter()
             .map(|entry| entry.inner_path().to_owned())

@@ -8,9 +8,9 @@ use crate::{Entry, Package};
 use crate::error::{ReadEntryError, ReadPackageError};
 
 // Dat packages have the following structure:
-// - `index_size` := size of the index (1x u32)
-// - offsets to Entries (`index_size` x u32)
-// - Entries (`index_size` x Entry)
+// - `entry_count` := number of entries (1x u32)
+// - offsets to Entries (`entry_count` x u32)
+// - Entries (`entry_count` x Entry)
 //
 // Entries have the following structure:
 // - `data_size` := file content length (1x u32)
@@ -33,11 +33,11 @@ pub fn read_from_input(mut input: (impl Read + Seek)) -> Result<Package, ReadPac
     let mut result = Package::new();
     input.seek(SeekFrom::Start(0))?;
 
-    let index_size = input.read_u32::<LittleEndian>()? as usize;
+    let entry_count = input.read_u32::<LittleEndian>()? as usize;
 
     // TODO: Skip offsets and simply read entries until EOF?
-    let mut entry_offsets = Vec::with_capacity(index_size);
-    for _ in 0..index_size {
+    let mut entry_offsets = Vec::with_capacity(entry_count);
+    for _ in 0..entry_count {
         let entry_offset = input.read_u32::<LittleEndian>()?;
         entry_offsets.push(entry_offset);
     }
