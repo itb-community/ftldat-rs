@@ -6,6 +6,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 
 use crate::{Entry, Package};
 use crate::error::{PackageCorruptError, ReadEntryError, ReadPackageError};
+use crate::pkg_package::constants::{ENTRY_SIZE, INDEX_SIZE, PKG_DEFLATED, PKG_SIGNATURE};
 
 // PKG packages have the following structure:
 // - `PKG\n` signature
@@ -33,13 +34,6 @@ pub fn read_from_path<P: AsRef<Path>>(source_path: P) -> Result<Package, ReadPac
         .expect("Failed to open the file for reading");
     read_from_input(BufReader::new(file))
 }
-
-/// PKG\n
-static PKG_SIGNATURE: [u8; 4] = [80, 75, 71, 10];
-static INDEX_SIZE: u16 = 16;
-static ENTRY_SIZE: u16 = 20;
-/// Bitmask flag for deflate compression
-static PKG_DEFLATED: u8 = 0x01;
 
 /// Constructs a [Package] instance from data in the given `input',
 /// consuming it in the process.
