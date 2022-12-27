@@ -6,7 +6,7 @@ use byteorder::{LittleEndian, WriteBytesExt};
 
 use crate::{Entry, Package};
 
-/// Writes out this [Package] in binary FtlDat format to a file at the specified `target_path`.
+/// Writes out the specified [Package] in binary FtlDat format to a file at the specified `target_path`.
 pub fn write_package_to_path<P: AsRef<Path>>(package: Package, target_path: P) -> Result<(), std::io::Error> {
     let file = File::options()
         .write(true)

@@ -71,6 +71,33 @@ pub enum ReadEntryError {
     PathHashMismatchError {
         inner_path: String,
         expected: u32,
-        actual: u32
-    }
+        actual: u32,
+    },
+}
+
+#[derive(Error, Debug)]
+pub enum PackageWriteError {
+    #[error("an I/O error has occurred")]
+    IOError(
+        #[from]
+        #[source] std::io::Error
+    ),
+    #[error("package contains more than u32::MAX entries")]
+    EntryCountExceededError(),
+    #[error("total size of all inner paths in package is larger than u32::MAX")]
+    PathAreaSizeExceededError(),
+    #[error("an error occurred while writing an entry")]
+    EntryWriteError(
+        #[from]
+        #[source] EntryWriteError
+    ),
+}
+
+#[derive(Error, Debug)]
+pub enum EntryWriteError {
+    #[error("an I/O error has occurred")]
+    IOError(
+        #[from]
+        #[source] std::io::Error
+    )
 }
