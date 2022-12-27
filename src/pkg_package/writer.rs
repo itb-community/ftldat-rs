@@ -3,8 +3,8 @@ use std::io::{BufWriter, Seek, SeekFrom, Write};
 use std::path::Path;
 
 use byteorder::{BigEndian, WriteBytesExt};
-use crate::error::{EntryWriteError, PackageWriteError};
 
+use crate::error::{EntryWriteError, PackageWriteError, PackageWriteErrorImpl};
 use crate::pkg_package::constants::{ENTRY_SIZE, INDEX_SIZE, PKG_SIGNATURE};
 use crate::pkg_package::shared::calculate_path_hash;
 use crate::shared::entry::Entry;
@@ -30,7 +30,7 @@ pub fn write_package_to_output(package: Package, mut output: (impl Write + Seek)
     output.write_u16::<BigEndian>(ENTRY_SIZE)?;
 
     if package.entry_count() > u32::MAX as usize {
-        return Err(PackageWriteError::EntryCountExceededError());
+        return PackageWriteErrorImpl::EntryCountExceededError().into();
     }
 
     output.write_u32::<BigEndian>(package.entry_count() as u32)?;
@@ -52,7 +52,7 @@ pub fn write_package_to_output(package: Package, mut output: (impl Write + Seek)
     }
 
     if path_region_buffer.len() > u32::MAX as usize {
-        return Err(PackageWriteError::PathAreaSizeExceededError());
+        return PackageWriteErrorImpl::PathAreaSizeExceededError(path_region_buffer.len()).into();
     }
 
     output.write_u32::<BigEndian>(path_region_buffer.len() as u32)?;
@@ -84,7 +84,7 @@ struct EntryHeader {
     inner_path_offset: u32,
     data_offset: u32,
     data_size: u32,
-    unpacked_data_size: u32
+    unpacked_data_size: u32,
 }
 
 impl EntryHeader {
@@ -109,7 +109,7 @@ impl From<&Entry> for EntryHeader {
             inner_path_offset: 0,
             data_offset: 0,
             data_size: entry.content.len() as u32,
-            unpacked_data_size: entry.content.len() as u32
+            unpacked_data_size: entry.content.len() as u32,
         }
     }
 }

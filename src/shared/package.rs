@@ -6,7 +6,7 @@ use std::path::Path;
 use std::slice::Iter;
 
 use crate::shared::entry::Entry;
-use crate::shared::error::*;
+use crate::error::InnerPathAlreadyExistsError;
 
 /// Represents the internal structure of an FTLDat package.
 ///
