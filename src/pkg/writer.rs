@@ -4,9 +4,9 @@ use std::path::Path;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
-use crate::pkg_package::constants::{ENTRY_SIZE, INDEX_SIZE, PKG_SIGNATURE};
-use crate::pkg_package::error::PkgWriteError;
-use crate::pkg_package::shared::calculate_path_hash;
+use crate::pkg::constants::{ENTRY_SIZE, INDEX_SIZE, PKG_SIGNATURE};
+use crate::pkg::error::PkgWriteError;
+use crate::pkg::shared::calculate_path_hash;
 use crate::shared::entry::Entry;
 use crate::shared::error::PackageWriteError;
 use crate::shared::package::Package;

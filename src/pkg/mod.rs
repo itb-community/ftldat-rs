@@ -4,5 +4,5 @@ mod constants;
 mod shared;
 mod error;
 
-pub use crate::pkg_package::reader::*;
-pub use crate::pkg_package::writer::*;
+pub use crate::pkg::reader::*;
+pub use crate::pkg::writer::*;

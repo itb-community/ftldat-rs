@@ -5,9 +5,9 @@ use std::path::Path;
 use byteorder::{BigEndian, ReadBytesExt};
 
 use crate::{Entry, Package};
-use crate::pkg_package::constants::{ENTRY_SIZE, INDEX_SIZE, PKG_DEFLATED, PKG_SIGNATURE};
-use crate::pkg_package::error::{EntryReadError, FileCorruptError};
-use crate::pkg_package::shared::calculate_path_hash;
+use crate::pkg::constants::{ENTRY_SIZE, INDEX_SIZE, PKG_DEFLATED, PKG_SIGNATURE};
+use crate::pkg::error::{EntryReadError, FileCorruptError};
+use crate::pkg::shared::calculate_path_hash;
 use crate::shared::error::PackageReadError;
 
 // PKG packages have the following structure:

@@ -14,7 +14,7 @@ pub(super) fn calculate_path_hash<S: AsRef<str>>(inner_path: S) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use crate::pkg_package::shared::calculate_path_hash;
+    use crate::pkg::shared::calculate_path_hash;
 
     #[test]
     fn calculated_path_hash_is_correct_for_sample_1() {

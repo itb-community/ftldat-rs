@@ -2,7 +2,7 @@
 mod test_pkg_writer {
     use std::path::Path;
 
-    use ftldat::{Package, pkg_package};
+    use ftldat::{Package, pkg};
 
     const TEST_DAT_PATH: &str = "./tests-resources/test.pkg";
 
@@ -16,7 +16,7 @@ mod test_pkg_writer {
         let tmp_path = tmp_file.path().to_str().unwrap();
 
         // Execute
-        let result = pkg_package::write_package_to_path(package, tmp_path);
+        let result = pkg::write_package_to_path(package, tmp_path);
 
         // Check
         assert!(result.is_ok());
@@ -37,7 +37,7 @@ mod test_pkg_writer {
         package.put_entry_from_string("test", "test123");
 
         // Execute
-        let result = pkg_package::write_package_to_path(package, tmp_path);
+        let result = pkg::write_package_to_path(package, tmp_path);
 
         // Check
         assert!(result.is_ok());
@@ -51,14 +51,14 @@ mod test_pkg_writer {
         let tmp_file = tempfile::NamedTempFile::new().unwrap();
         let tmp_path = tmp_file.path().to_str().unwrap();
 
-        let package = pkg_package::read_from_path(TEST_DAT_PATH).unwrap();
+        let package = pkg::read_from_path(TEST_DAT_PATH).unwrap();
         let order_before_write = package.inner_paths();
 
         // Execute
-        let result = pkg_package::write_package_to_path(package, tmp_path);
+        let result = pkg::write_package_to_path(package, tmp_path);
         println!("{}", tmp_path);
         assert!(result.is_ok());
-        let package = pkg_package::read_from_path(tmp_path).unwrap();
+        let package = pkg::read_from_path(tmp_path).unwrap();
         let order_after_write = package.inner_paths();
 
         // Check
