@@ -4,10 +4,11 @@ use std::path::Path;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
-use crate::error::{EntryWriteError, PackageWriteError, PackageWriteErrorImpl};
 use crate::pkg_package::constants::{ENTRY_SIZE, INDEX_SIZE, PKG_SIGNATURE};
+use crate::pkg_package::error::PkgWriteError;
 use crate::pkg_package::shared::calculate_path_hash;
 use crate::shared::entry::Entry;
+use crate::shared::error::PackageWriteError;
 use crate::shared::package::Package;
 
 /// Writes out the specified [Package] in binary PKG format to a file at the specified `target_path`.
@@ -30,7 +31,7 @@ pub fn write_package_to_output(package: Package, mut output: (impl Write + Seek)
     output.write_u16::<BigEndian>(ENTRY_SIZE)?;
 
     if package.entry_count() > u32::MAX as usize {
-        return PackageWriteErrorImpl::EntryCountExceededError().into();
+        return Err(PkgWriteError::EntryCountExceededError().into());
     }
 
     output.write_u32::<BigEndian>(package.entry_count() as u32)?;
@@ -52,7 +53,7 @@ pub fn write_package_to_output(package: Package, mut output: (impl Write + Seek)
     }
 
     if path_region_buffer.len() > u32::MAX as usize {
-        return PackageWriteErrorImpl::PathAreaSizeExceededError(path_region_buffer.len()).into();
+        return Err(PkgWriteError::PathAreaSizeExceededError(path_region_buffer.len()).into());
     }
 
     output.write_u32::<BigEndian>(path_region_buffer.len() as u32)?;
@@ -88,7 +89,7 @@ struct EntryHeader {
 }
 
 impl EntryHeader {
-    fn write_entry_header(self, output: &mut impl Write) -> Result<(), EntryWriteError> {
+    fn write_entry_header(self, output: &mut impl Write) -> Result<(), PackageWriteError> {
         output.write_u32::<BigEndian>(self.inner_path_hash)?;
         output.write_u8(self.entry_options)?;
         output.write_u24::<BigEndian>(self.inner_path_offset)?;

@@ -6,7 +6,5 @@ pub(crate) use crate::shared::entry::Entry as Entry;
 pub use crate::shared::package::Package as Package;
 
 pub mod error {
-    pub use crate::shared::error::shared::*;
-    pub use crate::shared::error::reader::*;
-    pub use crate::shared::error::writer::*;
+    pub use crate::shared::error::*;
 }

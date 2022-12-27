@@ -5,7 +5,7 @@ use std::path::Path;
 use byteorder::{LittleEndian, ReadBytesExt};
 
 use crate::{Entry, Package};
-use crate::error::{EntryReadError, PackageReadError};
+use crate::shared::error::PackageReadError;
 
 // Dat packages have the following structure:
 // - `entry_count` := number of entries (1x u32)
@@ -53,7 +53,7 @@ pub fn read_from_input(mut input: (impl Read + Seek)) -> Result<Package, Package
     Ok(result)
 }
 
-fn read_entry(input: &mut (impl Read + Seek)) -> Result<Entry, EntryReadError> {
+fn read_entry(input: &mut (impl Read + Seek)) -> Result<Entry, PackageReadError> {
     let content_length = input.read_u32::<LittleEndian>()?;
     let inner_path_length = input.read_u32::<LittleEndian>()?;
 

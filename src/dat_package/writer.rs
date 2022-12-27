@@ -5,9 +5,10 @@ use std::path::Path;
 use byteorder::{LittleEndian, WriteBytesExt};
 
 use crate::{Entry, Package};
+use crate::shared::error::PackageWriteError;
 
 /// Writes out the specified [Package] in binary FtlDat format to a file at the specified `target_path`.
-pub fn write_package_to_path<P: AsRef<Path>>(package: Package, target_path: P) -> Result<(), std::io::Error> {
+pub fn write_package_to_path<P: AsRef<Path>>(package: Package, target_path: P) -> Result<(), PackageWriteError> {
     let file = File::options()
         .write(true)
         .create(true)
@@ -20,7 +21,7 @@ pub fn write_package_to_path<P: AsRef<Path>>(package: Package, target_path: P) -
 
 /// Writes out the specified [Package] in binary FtlDat format to the given `output`,
 /// consuming it in the process.
-pub fn write_package_to_output(package: Package, mut output: (impl Write + Seek)) -> Result<(), std::io::Error> {
+pub fn write_package_to_output(package: Package, mut output: (impl Write + Seek)) -> Result<(), PackageWriteError> {
     let index_size = package.len();
     // Index size
     output.write_u32::<LittleEndian>(index_size as u32)?;
@@ -44,7 +45,7 @@ pub fn write_package_to_output(package: Package, mut output: (impl Write + Seek)
     Ok(())
 }
 
-fn write_entry(entry: &Entry, output: &mut impl Write) -> Result<(), std::io::Error> {
+fn write_entry(entry: &Entry, output: &mut impl Write) -> Result<(), PackageWriteError> {
     // Data size
     output.write_u32::<LittleEndian>(entry.content.len() as u32)?;
     // String length (inner_path)
