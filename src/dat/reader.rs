@@ -23,17 +23,16 @@ use crate::shared::package::{Package};
 // - file content (`data_size` x u8)
 
 /// Reads and creates a [Package] instance out of the specified [Path], using .dat format.
-pub fn read_from_path<P: AsRef<Path>>(source_path: P) -> Result<Package, PackageReadError> {
+pub fn read_package_from_path<P: AsRef<Path>>(source_path: P) -> Result<Package, PackageReadError> {
     let file = File::options()
         .read(true)
         .open(source_path)
         .expect("Failed to open the file for reading");
-    read_from_input(file)
+    read_package_from_input(file)
 }
 
-/// Constructs a [Package] instance from data in the given `input',
-/// consuming it in the process.
-pub fn read_from_input(file: File) -> Result<Package, PackageReadError> {
+/// Constructs a [Package] instance from data in the given file, consuming it in the process.
+pub fn read_package_from_input(file: File) -> Result<Package, PackageReadError> {
     let mut result = Package::new();
 
     let mmap = unsafe {

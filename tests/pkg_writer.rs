@@ -51,14 +51,14 @@ mod test_pkg_writer {
         let tmp_file = tempfile::NamedTempFile::new().unwrap();
         let tmp_path = tmp_file.path().to_str().unwrap();
 
-        let package = pkg::read_from_path(TEST_DAT_PATH).unwrap();
+        let package = pkg::read_package_from_path(TEST_DAT_PATH).unwrap();
         let order_before_write = package.inner_paths();
 
         // Execute
         let result = pkg::write_package_to_path(&package, tmp_path);
         println!("{}", tmp_path);
         assert!(result.is_ok());
-        let package = pkg::read_from_path(tmp_path).unwrap();
+        let package = pkg::read_package_from_path(tmp_path).unwrap();
         let order_after_write = package.inner_paths();
 
         // Check

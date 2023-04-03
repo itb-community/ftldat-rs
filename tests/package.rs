@@ -222,7 +222,7 @@ mod test_package {
         let tmp_file = tempdir().unwrap();
         let tmp_path = tmp_file.path().to_str().unwrap();
 
-        let package = dat::read_from_path(TEST_DAT_PATH).unwrap();
+        let package = dat::read_package_from_path(TEST_DAT_PATH).unwrap();
 
         // Execute
         let result = package.extract(tmp_path);

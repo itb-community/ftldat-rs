@@ -31,17 +31,16 @@ use crate::shared::error::PackageReadError;
 // - Entries / data region (`Entry.data_size` x `entry_count`, until EOF)
 
 /// Reads and creates a [Package] instance out of the specified [Path], using .dat format.
-pub fn read_from_path<P: AsRef<Path>>(source_path: P) -> Result<Package, PackageReadError> {
+pub fn read_package_from_path<P: AsRef<Path>>(source_path: P) -> Result<Package, PackageReadError> {
     let file = File::options()
         .read(true)
         .open(source_path)
         .expect("Failed to open the file for reading");
-    read_from_file(file)
+    read_package_from_file(file)
 }
 
-/// Constructs a [Package] instance from data in the given `input',
-/// consuming it in the process.
-pub fn read_from_file(file: File) -> Result<Package, PackageReadError> {
+/// Constructs a [Package] instance from data in the given file, consuming it in the process.
+pub fn read_package_from_file(file: File) -> Result<Package, PackageReadError> {
     let mut result = Package::new();
 
     let mmap = unsafe {

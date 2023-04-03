@@ -7,7 +7,7 @@ mod test_dat_reader {
     #[test]
     fn reader_should_correctly_read_package() {
         // Execute
-        let result = dat::read_from_path(TEST_DAT_PATH);
+        let result = dat::read_package_from_path(TEST_DAT_PATH);
         if result.is_err() {
             panic!("{:?}", result.unwrap_err());
         }

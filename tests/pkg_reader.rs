@@ -7,7 +7,7 @@ mod test_pkg_reader {
     #[test]
     fn reader_correctly_reads_test_package() {
         // Execute
-        let result = pkg::read_from_path(TEST_DAT_PATH);
+        let result = pkg::read_package_from_path(TEST_DAT_PATH);
         if result.is_err() {
             panic!("{:?}", result.unwrap_err());
         }

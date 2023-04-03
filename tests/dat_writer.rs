@@ -51,13 +51,13 @@ mod test_dat_writer {
         let tmp_file = tempfile::NamedTempFile::new().unwrap();
         let tmp_path = tmp_file.path().to_str().unwrap();
 
-        let package = dat::read_from_path(TEST_DAT_PATH).unwrap();
+        let package = dat::read_package_from_path(TEST_DAT_PATH).unwrap();
         let order_before_write = package.inner_paths();
 
         // Execute
         let result = dat::write_package_to_path(&package, tmp_path);
         assert!(result.is_ok());
-        let package = dat::read_from_path(tmp_path).unwrap();
+        let package = dat::read_package_from_path(tmp_path).unwrap();
         let order_after_write = package.inner_paths();
 
         // Check
@@ -65,5 +65,21 @@ mod test_dat_writer {
         assert_eq!(order_before_write[0], order_after_write[0]);
         assert_eq!(order_before_write[1], order_after_write[1]);
         assert_eq!(order_before_write[2], order_after_write[2]);
+    }
+
+    #[test]
+    fn writing_to_open_package_file_should_update_the_file() {
+        // Prepare
+        let tmp_file = tempfile::NamedTempFile::new().unwrap();
+        let tmp_path = tmp_file.path().to_str().unwrap();
+
+        std::fs::copy(Path::new(TEST_DAT_PATH), tmp_path)
+            .expect("ailed to copy test.dat for testing");
+
+        let mut package = dat::read_package_from_path(tmp_path).unwrap();
+        package.put_entry(PackageEntry::from_string("test4.txt", "test004"));
+
+        // Execute
+        dat::write_package_into_path(package, tmp_path).unwrap();
     }
 }
