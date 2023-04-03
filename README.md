@@ -3,87 +3,94 @@
 Rust implementation of FTLDat - a simple library for unpacking and repacking of .dat files, which are used
 by the games [Into the Breach](https://subsetgames.com/itb.html) and [Faster than Light](https://subsetgames.com/ftl.html) (until version 1.6.1).
 
+This library also supports the PKG format used by FTL after version 1.6.1.
+
 This library is intended to be loaded and interfaced with via Lua scripts.
-
-
-# Building
-
-This section assumes you have Rust set up with MSVC. If not, see here: https://www.rust-lang.org/learn/get-started.
-
-Building for release mode with MINGW should also be possible, and potentially a bit simpler, but I didn't want to try
-getting MINGW set up yet.
-
-### Development
-
-For development, the build process is very simple: 
-
-1. Open a terminal in the project's root directory.
-2. Run `cargo build`.
-
-### Release
-
-For release (as in, getting a .dll that Lua can interface with), the build process is quite a bit more involved.
-
-1. Change configuration to build the library in module mode.
-   1. Go to `Cargo.toml`.
-   2. Find the `[dependencies]` section.
-   3. Find the entry for `mlua` and replace `"vendored"` with `"module"`.
-      - Or just comment/uncomment the prepared entries.
-   - For explanation why this is needed, see the [Troubleshooting](#troubleshooting) section below.
-2. Open a terminal in the project's root directory.
-3. (First time only) Add `i686-pc-windows-msvc` target with the command `rustup target add i686-pc-windows-msvc`.
-4. Specify environment variables:
-   - `LUA_INC=lua/include` - path to Lua headers
-   - `LUA_LIB=lua/lua5.1` - path to Lua .lib file
-   - `LUA_LIB_NAME=lua/lua5.1` - same path as in `LUA_LIB`
-5. Run `cargo build --lib --release --target=i686-pc-windows-msvc`
-
-Steps 4 and 5 are automated in the form of `build.sh` script.
-
-Compiled .dll will be available in `./target/i686-pc-windows-msvc/release/ftldat.dll`.
 
 # Usage
 
-Load the library in your Lua script:
+Opening a package is fairly straightforward:
 
-```lua
--- load the dll - this exposes `ftldat` global variable,
--- with functions `new_package` and `read_package`
-package.loadlib("ftldat.dll", "luaopen_ftldat")()
+```rs
+let package = ftldat::dat::read_package_from_path("path/to/file.dat");
 
--- read a .dat file into memory
-pack = ftldat.read_package("path/to/resource.dat")
+# Can now query the package's contents, list or iterate...
+println!("Number of entries: {}", &package.entry_count());
+println!("Does the package contain a file at path 'test.txt'? {}", &package.entry_exists("test.txt"));
 
--- add an entry - this can fail if the entry already exists
-pack:add_text_entry("img/some/file.txt", "the file's content")
+# List paths of all files within the package
+let inner_paths = package.inner_paths();
 
--- alternatively, put an entry, which can overwrite an existing entry
-pack:put_text_entry("img/some/file.txt", "another content")
-
--- can also read an entry's content:
-content = pack:content_text_by_path("img/some/file.txt")
-
--- write out the package from memory to a file
-pack:to_file("path/to/resource.dat")
-
--- binary content can be read/written, too. This is done in the form of byte arrays,
--- which in Lua take the shape of tables of numbers.
-pack:put_binary_entry("img/image.png", { 1, 2, 3, 4, 5 })
+for entry in package.iter() {
+    # Do something with each entry
+}
 ```
 
-# Troubleshooting
+The underlying file is memory-mapped, and only read when initially creating the `package` instance, or when fetching
+an entry's content.
 
-The build process for getting a .dll that can interface with Lua is a little finicky.
+Packages can be modified to add, replace, or remove entries:
+```rs
+let mut package = ftldat::dat::read_package_from_path("path/to/file.dat");
 
-Into the Breach runs as a 32-bit application, so the library has to be compiled with 32-bit target.
+# `add_entry` will only add the entry if the package does NOT already contain an entry at the specified path (test.txt).
+# Otherwise, an error is returned.
+package.add_entry(PackageEntry::from_string("test.txt", "My text file's content."));
 
-Also, the library has to be built in `mlua`'s [module mode](https://github.com/khvzak/mlua#module-mode), otherwise the
-game crashes during exit. The crash doesn't *actually* cause any issues, as far as I could tell, but it does leave sort
-of a sour aftertaste after getting everything else to work. It also has the advantage of producing a smaller binary.
+# `put_entry` will overwrite the entry at the specified path (test2.txt) with the provided entry.
+package.put_entry(PackageEntry::from_string("test2.txt", "Lorem ipsum dolor sit amet"));
 
-Building in module mode under Windows requires linking to a Lua dll (as mentioned in the link). 
-This is what the `lua` directory and `build.sh` script are for - if you don't want to run the script file, you'll need
-to set the variables from the script in your desired environment.
+# Remove individual entry
+package.remove_entry("test.txt");
+
+# Remove all entries
+package.clear();
+```
+
+Entries can be created in a few ways:
+```rs
+# Directly from a string, mostly useful for testing (functionally the same as in-memory byte array)
+let entry = PackageEntry::from_string("file.txt", "Lorem ipsum dolor sit amet");
+
+# From a file on disk
+let entry = PackageEntry::from_file("file.png", "path/to/file.png");
+
+# From an in-memory byte array
+let content = [0, 1, 2, 3];
+PackageEntry::from_byte_array("file.bin", content.into());
+
+# From a memory-mapped file
+let mmap = ...     # Reference to the memory map
+let mmap_rc = Rc::new(mmap);
+let offset = ...   # Offset to the beginning of the entry's content within the memory-mapped file
+let length = ...   # Number of bytes that make up the entry's content
+let entry = PackageEntry::from_memory_mapped_file(
+    "file.wav",
+    mmap_rc.clone(),
+    offset,
+    length
+);
+```
+
+Packages can be written back to a file:
+```rs
+let package = ftldat::dat::read_package_from_path("path/to/file.dat");
+
+# `write_package_to_path` does not consume the `package`, allowing for multiple writes, but only allows writing to
+# files other than the file from which the package was originally loaded.
+ftldat::dat::write_package_to_path(&package, "path/to/other/file.dat");
+
+# `write_package_into_path` consumes the `package`, but releases file system resources and allows overwriting the
+# file from which the package was originally loaded.
+ftldat::dat::write_package_into_path(package, "path/to/file.dat");
+```
+
+Contents of the package can also be extracted:
+```rs
+let package = ftldat::dat::read_package_from_path("path/to/file.dat");
+
+package.extract("directory/to/extract/contents/");
+```
 
 # Areas to Improve
 
@@ -93,7 +100,3 @@ improvement. In no particular order:
 - Ownership of strings, I just used heap-allocated Strings and copied them left and right
 - Naming of functions, following proper Rust conventions (`from`, `into`, etc.)
 - Serialization of structs to bytes can probably be handled better (though I like keeping in-memory and on-disk representations separate)
-
-# Attributions
-
-Project setup, as well as linking the compiled .dll file and loading it in Lua was based off of https://github.com/voidshine/renoise_tools. 
