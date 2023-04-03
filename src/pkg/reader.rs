@@ -1,17 +1,19 @@
 use std::fs::File;
-use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
+use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
+use std::rc::Rc;
 
 use byteorder::{BigEndian, ReadBytesExt};
+use memmap2::Mmap;
 
-use crate::{Entry, Package};
+use crate::{Package, PackageEntry};
 use crate::pkg::constants::{ENTRY_SIZE, INDEX_SIZE, PKG_DEFLATED, PKG_SIGNATURE};
 use crate::pkg::error::{EntryReadError, FileCorruptError};
 use crate::pkg::shared::calculate_path_hash;
 use crate::shared::error::PackageReadError;
 
 // PKG packages have the following structure:
-// - `PKG\n` signature
+// - `PKG\n` signature (4x u8)
 // - `index_size` := number of bytes in the header, including signature (?) (1x u16)
 // - `entry_size` := number of bytes in each entry (1x u16)
 // - `entry_count` := number of entries (1x u32)
@@ -34,62 +36,65 @@ pub fn read_from_path<P: AsRef<Path>>(source_path: P) -> Result<Package, Package
         .read(true)
         .open(source_path)
         .expect("Failed to open the file for reading");
-    read_from_input(BufReader::new(file))
+    read_from_file(file)
 }
 
 /// Constructs a [Package] instance from data in the given `input',
 /// consuming it in the process.
-pub fn read_from_input(mut input: (impl Read + Seek)) -> Result<Package, PackageReadError> {
+pub fn read_from_file(file: File) -> Result<Package, PackageReadError> {
     let mut result = Package::new();
-    input.seek(SeekFrom::Start(0))?;
 
+    let mmap = unsafe {
+        Mmap::map(&file)
+    }?;
+
+    let mut cursor = Cursor::new(&mmap[..INDEX_SIZE as usize]);
     for expected_signature_byte in PKG_SIGNATURE {
-        let signature_byte = input.read_u8()?;
+        let signature_byte = cursor.read_u8()?;
         if signature_byte != expected_signature_byte {
             return Err(FileCorruptError::SignatureMismatchError {
                 expected: expected_signature_byte,
-                actual: signature_byte
+                actual: signature_byte,
             }.into());
         }
     }
 
-    let index_size = input.read_u16::<BigEndian>()?;
+    let index_size = cursor.read_u16::<BigEndian>()?;
     if index_size != INDEX_SIZE {
         return Err(FileCorruptError::HeaderSizeMismatchError {
             expected: INDEX_SIZE,
-            actual: index_size
+            actual: index_size,
         }.into());
     }
 
-    let entry_size = input.read_u16::<BigEndian>()?;
+    let entry_size = cursor.read_u16::<BigEndian>()?;
     if entry_size != ENTRY_SIZE {
         return Err(FileCorruptError::EntriesHeaderSizeMismatchError {
             expected: ENTRY_SIZE,
-            actual: entry_size
+            actual: entry_size,
         }.into());
     }
 
-    let entry_count = input.read_u32::<BigEndian>()? as usize;
-    let path_region_size = input.read_u32::<BigEndian>()? as usize;
+    let entry_count = cursor.read_u32::<BigEndian>()? as usize;
+    let path_region_size = cursor.read_u32::<BigEndian>()? as usize;
+    let path_region_offset = INDEX_SIZE as usize + (ENTRY_SIZE as usize * entry_count) as usize;
 
+    let mut cursor = Cursor::new(&mmap[INDEX_SIZE as usize..path_region_offset]);
     let mut entry_builders: Vec<EntryBuilder> = Vec::with_capacity(entry_count);
     for _ in 0..entry_count {
-        let entry_builder = EntryBuilder::read_entry_header(&mut input)?;
+        let entry_builder = EntryBuilder::read_entry_header(&mut cursor)?;
         entry_builders.push(entry_builder);
     }
 
-    let mut path_region_buffer = vec![0_u8; path_region_size as usize];
-    input.read_exact(&mut path_region_buffer)?;
-    let mut path_region_cursor = Cursor::new(path_region_buffer);
+    let path_region_slice = mmap[path_region_offset .. path_region_offset + path_region_size].to_vec();
+    let mut cursor = Cursor::new(path_region_slice);
 
+    let mmap_rc = Rc::new(mmap);
     for mut entry_builder in entry_builders {
-        entry_builder.read_inner_path(&mut path_region_cursor)?;
-        entry_builder.read_data(&mut input)?;
-        let entry = entry_builder.into();
-        result.add_entry_internal(entry)?;
+        entry_builder.read_inner_path(&mut cursor)?;
+        let entry = entry_builder.build(mmap_rc.clone());
+        result.add_entry(entry)?;
     }
-
-    drop(path_region_cursor);
 
     Ok(result)
 }
@@ -100,11 +105,10 @@ struct EntryBuilder {
     data_offset: u32,
     data_size: u32,
     inner_path: Option<String>,
-    data: Option<Vec<u8>>,
 }
 
 impl EntryBuilder {
-    fn read_entry_header(input: &mut (impl Read + Seek)) -> Result<EntryBuilder, PackageReadError> {
+    fn read_entry_header(input: &mut impl Read) -> Result<EntryBuilder, PackageReadError> {
         let inner_path_hash = input.read_u32::<BigEndian>()?;
         let entry_options = input.read_u8()?;
         let is_data_deflated = (entry_options & PKG_DEFLATED) != 0;
@@ -124,11 +128,10 @@ impl EntryBuilder {
             data_offset,
             data_size,
             inner_path: Option::None,
-            data: Option::None,
         })
     }
 
-    fn read_inner_path(&mut self, path_region_input: &mut (impl Read + Seek)) -> Result<(), PackageReadError> {
+    fn read_inner_path(&mut self, path_region_input: &mut Cursor<Vec<u8>>) -> Result<(), PackageReadError> {
         path_region_input.seek(SeekFrom::Start(self.inner_path_offset as u64))?;
         self.inner_path = Some(read_null_terminated_string(path_region_input)?);
 
@@ -138,29 +141,20 @@ impl EntryBuilder {
             return Err(EntryReadError::PathHashMismatchError {
                 inner_path: inner_path.to_string(),
                 expected: self.inner_path_hash,
-                actual: calculated_hash
+                actual: calculated_hash,
             }.into());
         }
 
         Ok(())
     }
 
-    fn read_data(&mut self, data_input: &mut (impl Read + Seek)) -> Result<(), PackageReadError> {
-        data_input.seek(SeekFrom::Start(self.data_offset as u64))?;
-        let mut buffer = vec![0_u8; self.data_size as usize];
-        data_input.read_exact(&mut buffer)?;
-        self.data = Some(buffer);
-
-        Ok(())
-    }
-}
-
-impl Into<Entry> for EntryBuilder {
-    fn into(self) -> Entry {
-        Entry {
-            inner_path: self.inner_path.expect("Missing inner_path!"),
-            content: self.data.expect("Missing data!")
-        }
+    fn build(self, input: Rc<Mmap>) -> PackageEntry {
+        PackageEntry::from_memory_mapped_file(
+            self.inner_path.expect("Missing inner path!"),
+            input,
+            self.data_offset as u64,
+            self.data_size as u64
+        )
     }
 }
 

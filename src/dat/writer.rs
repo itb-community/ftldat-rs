@@ -4,11 +4,12 @@ use std::path::Path;
 
 use byteorder::{LittleEndian, WriteBytesExt};
 
-use crate::{Entry, Package};
+use crate::shared::entry::PackageEntry;
 use crate::shared::error::PackageWriteError;
+use crate::shared::package::Package;
 
 /// Writes out the specified [Package] in binary FtlDat format to a file at the specified `target_path`.
-pub fn write_package_to_path<P: AsRef<Path>>(package: Package, target_path: P) -> Result<(), PackageWriteError> {
+pub fn write_package_to_path<P: AsRef<Path>>(package: &Package, target_path: P) -> Result<(), PackageWriteError> {
     let file = File::options()
         .write(true)
         .create(true)
@@ -21,8 +22,8 @@ pub fn write_package_to_path<P: AsRef<Path>>(package: Package, target_path: P) -
 
 /// Writes out the specified [Package] in binary FtlDat format to the given `output`,
 /// consuming it in the process.
-pub fn write_package_to_output(package: Package, mut output: (impl Write + Seek)) -> Result<(), PackageWriteError> {
-    let index_size = package.len();
+pub fn write_package_to_output(package: &Package, mut output: (impl Write + Seek)) -> Result<(), PackageWriteError> {
+    let index_size = package.entry_count();
     // Index size
     output.write_u32::<LittleEndian>(index_size as u32)?;
 
@@ -31,7 +32,8 @@ pub fn write_package_to_output(package: Package, mut output: (impl Write + Seek)
 
     // Write Entries and store the offsets they were written at
     let mut entry_offsets = Vec::with_capacity(index_size);
-    for entry in package.entries() {
+
+    for entry in package.iter() {
         entry_offsets.push(output.stream_position()? as u32);
         write_entry(entry, &mut output)?;
     }
@@ -45,15 +47,17 @@ pub fn write_package_to_output(package: Package, mut output: (impl Write + Seek)
     Ok(())
 }
 
-fn write_entry(entry: &Entry, output: &mut impl Write) -> Result<(), PackageWriteError> {
+fn write_entry(entry: &PackageEntry, output: &mut impl Write) -> Result<(), PackageWriteError> {
+    let inner_path = entry.inner_path();
+    let content = entry.content()?;
     // Data size
-    output.write_u32::<LittleEndian>(entry.content.len() as u32)?;
+    output.write_u32::<LittleEndian>(content.len() as u32)?;
     // String length (inner_path)
-    output.write_u32::<LittleEndian>(entry.inner_path.len() as u32)?;
+    output.write_u32::<LittleEndian>(inner_path.len() as u32)?;
     // Actual string (inner_path)
-    output.write_all(entry.inner_path.as_bytes())?;
+    output.write_all(inner_path.as_bytes())?;
     // Data
-    output.write_all(&entry.content)?;
+    output.write_all(content.as_ref())?;
 
     Ok(())
 }

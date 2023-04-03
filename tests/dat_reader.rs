@@ -14,7 +14,7 @@ mod test_dat_reader {
 
         // Check
         let package = result.unwrap();
-        assert_eq!(3, package.len());
+        assert_eq!(3, package.entry_count());
 
         let paths = package.inner_paths();
         assert_eq!("test1.txt", paths[0]);
@@ -22,7 +22,10 @@ mod test_dat_reader {
         assert_eq!("test3.txt", paths[2]);
 
         let contents = paths.iter()
-            .map(|path| package.string_content_by_path(path).unwrap())
+            .map(|path| {
+                let vec = package.content_by_path(path).unwrap();
+                String::from_utf8(vec).expect("Invalid UTF-8 sequence")
+            })
             .collect::<Vec<String>>();
         assert_eq!("test001", contents[0]);
         assert_eq!("test002", contents[1]);

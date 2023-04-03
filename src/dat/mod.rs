@@ -1,6 +1,7 @@
 pub(crate) mod reader;
 pub(crate) mod writer;
-pub(crate) mod error;
+mod error;
+mod constants;
 
 pub use crate::dat::reader::*;
 pub use crate::dat::writer::*;

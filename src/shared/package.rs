@@ -2,26 +2,33 @@ use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 use std::fs::File;
 use std::io::{Write};
-use std::path::Path;
+use std::path::{Path};
 use std::slice::Iter;
 
-use crate::shared::entry::Entry;
 use crate::error::InnerPathAlreadyExistsError;
+use crate::shared::entry::PackageEntry;
 
-/// Represents the internal structure of an FTLDat package.
+/// Represents the internal structure of a package.
 ///
-/// These packages consist of a list of [Entries](Entry).
+/// These packages consist of a list of [entries](PackageEntry).
 #[derive(Debug)]
 pub struct Package {
-    /// Use a Vec as main [Entry] storage; this way we retain the order in which the source
-    /// FtlDat file originally stored its entries.
-    entries: Vec<Entry>,
+    /// Use a Vec as main [PackageEntry] storage; this way we retain the order in which the source
+    /// file originally stored its entries.
+    entries: Vec<PackageEntry>,
     inner_path_to_entry_index: BTreeMap<String, usize>,
 }
 
 impl Package {
-    //region <Constructors>
-    /// Constructs a new empty [Package] with the specified capacity.
+    /// Creates a new empty [Package].
+    pub fn new() -> Package {
+        Package {
+            entries: Vec::new(),
+            inner_path_to_entry_index: BTreeMap::new(),
+        }
+    }
+
+    /// Creates a new empty [Package] with at least the specified capacity.
     pub fn with_capacity(capacity: usize) -> Package {
         Package {
             entries: Vec::with_capacity(capacity),
@@ -29,180 +36,108 @@ impl Package {
         }
     }
 
-    /// Constructs a new empty [Package] instance, initialized with a capacity for 2048 entries.
-    pub fn new() -> Package {
-        Package::with_capacity(2048)
-    }
-    //endregion
-
-    //region <API>
-    /// Adds a new entry to this [Package] with the specified `inner_path` and text `content`.
-    /// Returns an [InnerPathAlreadyExistsError] if this [Package] already contains an [Entry] under
-    /// the specified `inner_path`.
-    ///
-    /// * `inner_path` - path under which the file will be stored within the [Package].
-    /// * `content` - textual content of the file.
-    pub fn add_entry_from_string<S: AsRef<str>, C: AsRef<str> + Into<Vec<u8>>>(&mut self, inner_path: S, content: C) -> Result<(), InnerPathAlreadyExistsError> {
-        let ref_inner_path = inner_path.as_ref();
-        if self.inner_path_to_entry_index.contains_key(ref_inner_path) {
-            return Err(InnerPathAlreadyExistsError(ref_inner_path.to_owned()));
-        }
-
-        self.append_new_entry(Entry::from_string(ref_inner_path, content));
-        Ok(())
-    }
-
-    pub fn add_entry_from_byte_array<S: AsRef<str>>(&mut self, inner_path: S, content: Vec<u8>) -> Result<(), InnerPathAlreadyExistsError> {
-        let ref_inner_path = inner_path.as_ref();
-        if self.inner_path_to_entry_index.contains_key(ref_inner_path) {
-            return Err(InnerPathAlreadyExistsError(ref_inner_path.to_owned()));
-        }
-
-        self.append_new_entry(Entry::from_byte_array(ref_inner_path, content));
-        Ok(())
-    }
-
-    /// Puts the specified text `content` into this [Package] under the specified `inner_path`,
-    /// overwriting any entry that may have been previously stored under that `inner_path`.
-    pub fn put_entry_from_string<S: AsRef<str>, C: AsRef<str> + Into<Vec<u8>>>(&mut self, inner_path: S, content: C) {
-        let ref_inner_path = inner_path.as_ref();
-        let maybe_index = self.inner_path_to_entry_index.get(ref_inner_path);
-        let entry = Entry::from_string(ref_inner_path, content);
-        match maybe_index {
-            Some(index) => {
-                self.entries.remove(*index);
-                self.entries.insert(*index, entry);
-            }
-            None => {
-                self.append_new_entry(entry);
-            }
-        }
-    }
-
-    /// Puts the specified binary `content` into this [Package] under the specified `inner_path`,
-    /// overwriting any entry that may have been previously stored under that `inner_path`.
-    pub fn put_entry_from_byte_array<S: AsRef<str>>(&mut self, inner_path: S, content: Vec<u8>) {
-        let ref_inner_path = inner_path.as_ref();
-        let maybe_index = self.inner_path_to_entry_index.get(ref_inner_path);
-        let entry = Entry::from_byte_array(ref_inner_path, content);
-        match maybe_index {
-            Some(index) => {
-                self.entries.remove(*index);
-                self.entries.insert(*index, entry);
-            }
-            None => {
-                self.append_new_entry(entry);
-            }
-        }
-    }
-
-    /// Adds the specified `entry` into this [Package]. Returns an [Error] if this [Package]
-    /// already contains an [Entry] under the same `inner_path` as the specified `entry`.
-    pub(crate) fn add_entry_internal(&mut self, entry: Entry) -> Result<(), InnerPathAlreadyExistsError> {
-        if self.inner_path_to_entry_index.contains_key(&entry.inner_path) {
-            return Err(InnerPathAlreadyExistsError(entry.inner_path));
+    /// Adds the specified entry to this [Package].
+    /// Returns an [InnerPathAlreadyExistsError] if this [Package] already contains an entry under
+    /// the specified entry's `inner_path`.
+    pub fn add_entry(&mut self, entry: PackageEntry) -> Result<(), InnerPathAlreadyExistsError> {
+        let inner_path = entry.inner_path().to_string();
+        if self.inner_path_to_entry_index.contains_key(&inner_path) {
+            return Err(InnerPathAlreadyExistsError(inner_path));
         }
 
         self.append_new_entry(entry);
         Ok(())
     }
 
-    fn append_new_entry(&mut self, entry: Entry) {
-        let index = self.entries.len();
-        self.inner_path_to_entry_index.insert(entry.inner_path.to_string(), index);
-        self.entries.push(entry);
-    }
-
-    /// Retrieves content under the `inner_path` in this [Package].
-    ///
-    /// Returns a copy of the text content if found, or `None` if the `inner_path` doesn't
-    /// have any entry associated with it.
-    pub fn string_content_by_path<S: AsRef<str>>(&self, inner_path: S) -> Option<String> {
-        let maybe_index = self.inner_path_to_entry_index.get(inner_path.as_ref());
-        match maybe_index {
-            Some(index) => {
-                self.entries.get(*index)
-                    .map(|entry| entry.content_string())
-            }
-            None => None
-        }
-    }
-
-    /// Retrieves content under the `inner_path` in this [Package].
-    ///
-    /// Returns a copy of the binary content if found, or `None` if the `inner_path` doesn't
-    /// have any entry associated with it.
-    pub fn byte_array_content_by_path<S: AsRef<str>>(&self, inner_path: S) -> Option<Vec<u8>> {
-        let maybe_index = self.inner_path_to_entry_index.get(inner_path.as_ref());
-        match maybe_index {
-            Some(index) => {
-                self.entries.get(*index)
-                    .map(|entry| entry.content_bytes().to_vec())
-            }
-            None => None
-        }
-    }
-
-    /// Removes the [Entry] under the specified `inner_path` from this [Package].
-    ///
-    /// Returns `true` if the entry was removed, `false` if no entry was found under the
-    /// specified path.
-    pub fn remove_entry(&mut self, inner_path: &str) -> bool {
+    /// Puts the specified entry into this [Package],
+    /// overwriting any entry that may have been previously stored under that entry's `inner_path`.
+    pub fn put_entry(&mut self, entry: PackageEntry) {
+        let inner_path = entry.inner_path();
         let maybe_index = self.inner_path_to_entry_index.get(inner_path);
         match maybe_index {
             Some(index) => {
+                let index = *index;
+                self.entries.remove(index);
+                self.entries.insert(index, entry);
+            }
+            None => {
+                self.append_new_entry(entry);
+            }
+        }
+    }
+
+    /// Retrieves content under the `inner_path` in this [Package].
+    ///
+    /// Returns a copy of the content if found, or `None` if the `inner_path` doesn't
+    /// have any entry associated with it.
+    pub fn content_by_path<S: AsRef<str>>(&self, inner_path: S) -> Option<Vec<u8>> {
+        let maybe_index = self.inner_path_to_entry_index.get(inner_path.as_ref());
+        match maybe_index {
+            Some(index) => {
+                self.entries.get(*index)
+                    .map(|entry| entry.content().unwrap())
+            }
+            None => None
+        }
+    }
+
+    /// Removes the entry under the specified `inner_path` from this [Package].
+    ///
+    /// Returns `true` if the entry was removed, `false` if no entry was found under the
+    /// specified path.
+    pub fn remove_entry<S: AsRef<str>>(&mut self, inner_path: S) -> bool {
+        let maybe_index = self.inner_path_to_entry_index.get(inner_path.as_ref());
+        match maybe_index {
+            Some(index) => {
                 self.entries.remove(*index);
-                self.inner_path_to_entry_index.remove(inner_path);
                 true
             }
             None => false
         }
     }
 
-    /// Checks if this [Package] has any [Entry] associated with the given `inner_path`.
+    /// Checks if this [Package] has any entry associated with the given `inner_path`.
     ///
-    /// Returns `true` if an [Entry] is found, `false` otherwise.
-    pub fn entry_exists(&self, inner_path: &str) -> bool {
-        self.inner_path_to_entry_index.contains_key(inner_path)
+    /// Returns `true` if an entry is found, `false` otherwise.
+    pub fn entry_exists<S: AsRef<str>>(&self, inner_path: S) -> bool {
+        self.inner_path_to_entry_index.get(inner_path.as_ref()).is_some()
     }
 
-    /// Removes all [Entries](Entry) from this [Package].
+    /// Removes all entries from this [Package].
     pub fn clear(&mut self) {
-        self.entries.clear();
         self.inner_path_to_entry_index.clear();
-    }
-
-    /// Returns an iterator over this [Package]'s [Entries](Entry).
-    pub(crate) fn iter(&self) -> Iter<Entry> {
-        self.entries.iter()
-    }
-
-    /// Alias for [Package::iter]
-    pub(crate) fn entries(&self) -> Iter<Entry> {
-        self.iter()
+        self.entries.clear();
     }
 
     /// Returns a view of `inner_path`s in this [Package], reflecting the internal order of
     /// entries within the package.
     pub fn inner_paths(&self) -> Vec<String> {
-        self.iter()
-            .map(|entry| entry.inner_path().to_owned())
-            .collect::<Vec<String>>()
+        self.entries.iter()
+            .map(|e| e.inner_path().to_string())
+            .collect()
     }
 
-    /// Returns the number of [Entries](Entry) in this [Package].
-    pub fn len(&self) -> usize {
+    /// Returns the number of entries in this [Package].
+    pub fn entry_count(&self) -> usize {
         self.entries.len()
     }
 
-    /// Returns the number of [Entries](Entry) in this [Package].
-    pub fn entry_count(&self) -> usize {
-        self.len()
+    fn append_new_entry(&mut self, entry: PackageEntry) {
+        let index = self.entries.len();
+        self.inner_path_to_entry_index.insert(entry.inner_path().to_string(), index);
+        self.entries.push(entry);
+    }
+
+    /// Returns an iterator over this [Package]'s [entries](PackageEntry).
+    pub fn iter(&self) -> Iter<'_, PackageEntry> {
+        self.entries.iter()
     }
 
     pub fn extract<P: AsRef<Path>>(&self, destination_path: P) -> Result<(), std::io::Error> {
+        let destination_path = destination_path.as_ref();
+
         for entry in self.iter() {
-            let entry_dest_path = destination_path.as_ref().join(entry.inner_path());
+            let entry_dest_path = destination_path.join(entry.inner_path());
 
             std::fs::create_dir_all(&entry_dest_path.parent().unwrap())?;
             let mut file = File::options()
@@ -212,7 +147,7 @@ impl Package {
                 .open(&entry_dest_path)
                 .expect(&format!("Failed to open the file for writing: {}", &entry_dest_path.to_str().unwrap()));
 
-            let result = file.write(entry.content_bytes());
+            let result = file.write(entry.content()?.as_ref());
 
             if let Err(error) = result {
                 return Err(error);
@@ -221,11 +156,10 @@ impl Package {
 
         Ok(())
     }
-    //endregion
 }
 
 impl Display for Package {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Entry [entries: '{}']", self.len())
+        write!(f, "Package [entries: '{}']", self.entry_count())
     }
 }

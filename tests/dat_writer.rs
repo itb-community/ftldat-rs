@@ -2,7 +2,7 @@
 mod test_dat_writer {
     use std::path::Path;
 
-    use ftldat::{Package, dat};
+    use ftldat::{dat, Package, PackageEntry};
 
     const TEST_DAT_PATH: &str = "./tests-resources/test.dat";
 
@@ -10,13 +10,13 @@ mod test_dat_writer {
     fn writer_should_create_file_on_disk_if_missing() {
         // Prepare
         let mut package = Package::new();
-        package.put_entry_from_string("test", "test123");
+        package.put_entry(PackageEntry::from_string("test", "test123"));
 
         let tmp_file = tempfile::NamedTempFile::new().unwrap();
         let tmp_path = tmp_file.path().to_str().unwrap();
 
         // Execute
-        let result = dat::write_package_to_path(package, tmp_path);
+        let result = dat::write_package_to_path(&package, tmp_path);
 
         // Check
         assert!(result.is_ok());
@@ -34,10 +34,10 @@ mod test_dat_writer {
             .expect("failed to copy test.dat for testing");
 
         let mut package = Package::new();
-        package.put_entry_from_string("test", "test123");
+        package.put_entry(PackageEntry::from_string("test", "test123"));
 
         // Execute
-        let result = dat::write_package_to_path(package, tmp_path);
+        let result = dat::write_package_to_path(&package, tmp_path);
 
         // Check
         assert!(result.is_ok());
@@ -55,7 +55,7 @@ mod test_dat_writer {
         let order_before_write = package.inner_paths();
 
         // Execute
-        let result = dat::write_package_to_path(package, tmp_path);
+        let result = dat::write_package_to_path(&package, tmp_path);
         assert!(result.is_ok());
         let package = dat::read_from_path(tmp_path).unwrap();
         let order_after_write = package.inner_paths();

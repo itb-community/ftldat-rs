@@ -1,3 +1,3 @@
-pub(crate) mod entry;
+pub mod error;
 pub(crate) mod package;
-pub(crate) mod error;
+pub(crate) mod entry;

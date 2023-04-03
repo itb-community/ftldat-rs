@@ -4,7 +4,7 @@ mod test_package {
 
     use tempfile::tempdir;
 
-    use ftldat::{Package, dat};
+    use ftldat::{Package, dat, PackageEntry};
 
     const TEST_DAT_PATH: &str = "./tests-resources/test.dat";
 
@@ -12,7 +12,7 @@ mod test_package {
     fn new_package_should_be_empty() {
         let package = Package::new();
 
-        assert_eq!(0, package.len());
+        assert_eq!(0, package.entry_count());
     }
 
     #[test]
@@ -23,17 +23,20 @@ mod test_package {
         let content = "test";
 
         // Execute
-        let result = package.add_entry_from_string(
+        let result = package.add_entry(PackageEntry::from_string(
             inner_path,
             content,
-        );
+        ));
 
         // Check
         assert!(result.is_ok());
-        assert_eq!(1, package.len());
+        assert_eq!(1, package.entry_count());
         assert!(package.entry_exists(inner_path));
-        assert_eq!(content, package.string_content_by_path(inner_path)
-            .unwrap_or("".to_string()));
+        assert_eq!(
+            content.as_bytes(),
+            package.content_by_path(inner_path)
+                .unwrap_or(Vec::new())
+        );
     }
 
     #[test]
@@ -43,25 +46,28 @@ mod test_package {
         let inner_path = "test";
         let content1 = "test";
 
-        let result = package.add_entry_from_string(
+        let result = package.add_entry(PackageEntry::from_string(
             inner_path,
             content1,
-        );
+        ));
         assert!(result.is_ok());
 
         // Execute
         let content2 = "test123";
-        let result = package.add_entry_from_string(
+        let result = package.add_entry(PackageEntry::from_string(
             inner_path,
             content2,
-        );
+        ));
 
         // Check
         assert!(result.is_err());
-        assert_eq!(1, package.len());
+        assert_eq!(1, package.entry_count());
         assert!(package.entry_exists(inner_path));
-        assert_eq!(content1, package.string_content_by_path(inner_path)
-            .unwrap_or("".to_string()));
+        assert_eq!(
+            content1.as_bytes(),
+            package.content_by_path(inner_path)
+                .unwrap_or(Vec::new())
+        );
     }
 
     #[test]
@@ -72,13 +78,18 @@ mod test_package {
         let content = "test";
 
         // Execute
-        package.put_entry_from_string(inner_path, content);
+        package.put_entry(PackageEntry::from_string(
+            inner_path, content
+        ));
 
         // Check
-        assert_eq!(1, package.len());
+        assert_eq!(1, package.entry_count());
         assert!(package.entry_exists(inner_path));
-        assert_eq!(content, package.string_content_by_path(inner_path)
-            .unwrap_or("".to_string()));
+        assert_eq!(
+            content.as_bytes(),
+            package.content_by_path(inner_path)
+                .unwrap_or(Vec::new())
+        );
     }
 
     #[test]
@@ -88,17 +99,24 @@ mod test_package {
         let inner_path = "test";
         let content1 = "test";
 
-        package.put_entry_from_string(inner_path, content1);
+        package.put_entry(PackageEntry::from_string(
+            inner_path, content1
+        ));
 
         // Execute
         let content2 = "test123";
-        package.put_entry_from_string(inner_path, content2);
+        package.put_entry(PackageEntry::from_string(
+            inner_path, content2
+        ));
 
         // Check
-        assert_eq!(1, package.len());
+        assert_eq!(1, package.entry_count());
         assert!(package.entry_exists(inner_path));
-        assert_eq!(content2, package.string_content_by_path(inner_path)
-            .unwrap_or("".to_string()));
+        assert_eq!(
+            content2.as_bytes(),
+            package.content_by_path(inner_path)
+                .unwrap_or(Vec::new())
+        );
     }
 
     #[test]
@@ -115,14 +133,16 @@ mod test_package {
         // Prepare
         let mut package = Package::new();
         let inner_path = "test";
-        package.put_entry_from_string(inner_path, "test");
+        package.put_entry(PackageEntry::from_string(
+            inner_path, "test"
+        ));
 
         // Execute
         let result = package.remove_entry(inner_path);
 
         // Check
         assert_eq!(true, result);
-        assert_eq!(0, package.len());
+        assert_eq!(0, package.entry_count());
     }
 
     #[test]
@@ -140,14 +160,16 @@ mod test_package {
         // Prepare
         let mut package = Package::new();
         let inner_path = "test";
-        package.put_entry_from_string(inner_path, "test");
+        package.put_entry(PackageEntry::from_string(
+            inner_path, "test"
+        ));
 
         // Execute
         let result = package.entry_exists(inner_path);
 
         // Check
         assert_eq!(true, result);
-        assert_eq!(1, package.len());
+        assert_eq!(1, package.entry_count());
     }
 
     #[test]
@@ -155,15 +177,17 @@ mod test_package {
         // Prepare
         let mut package = Package::new();
         let inner_path = "test";
-        package.put_entry_from_string(inner_path, "test");
+        package.put_entry(PackageEntry::from_string(
+            inner_path, "test"
+        ));
 
         // Execute
-        let result: Option<String> = package.string_content_by_path(inner_path);
+        let result: Option<Vec<u8>> = package.content_by_path(inner_path);
 
         // Check
         assert!(result.is_some());
         let content = result.unwrap();
-        assert_eq!("test", content);
+        assert_eq!("test".as_bytes(), content);
     }
 
     #[test]
@@ -171,7 +195,7 @@ mod test_package {
         // Prepare
         let package = Package::new();
 
-        let result: Option<String> = package.string_content_by_path("test");
+        let result: Option<Vec<u8>> = package.content_by_path("test");
 
         assert!(result.is_none());
     }
@@ -180,16 +204,16 @@ mod test_package {
     fn clear_should_remove_all_entries_from_package() {
         // Prepare
         let mut package = Package::new();
-        package.put_entry_from_string("test1", "test");
-        package.put_entry_from_string("test2", "test");
-        package.put_entry_from_string("test3", "test");
-        assert_eq!(3, package.len());
+        package.put_entry(PackageEntry::from_string("test1", "test"));
+        package.put_entry(PackageEntry::from_string("test2", "test"));
+        package.put_entry(PackageEntry::from_string("test3", "test"));
+        assert_eq!(3, package.entry_count());
 
         // Execute
         package.clear();
 
         // Check
-        assert_eq!(0, package.len());
+        assert_eq!(0, package.entry_count());
     }
 
     #[test]
