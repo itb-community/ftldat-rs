@@ -35,8 +35,8 @@ use ftldat::{Package, PackageEntry};
 
 let mut package = Package::from_path_dat("path/to/file.dat");
 
-// `add_entry` will only add the entry if the package does NOT already contain an entry at the specified path (test.txt).
-// Otherwise, an error is returned.
+// `add_entry` will only add the entry if the package does NOT already contain an entry at the specified
+// path (test.txt). Otherwise, an error is returned.
 package.add_entry(PackageEntry::from_string("test.txt", "My text file's content."));
 
 // `put_entry` will overwrite the entry at the specified path (test2.txt) with the provided entry.
@@ -80,12 +80,12 @@ use ftldat::Package;
 
 let package = Package::from_path_dat("path/to/file.dat");
 
-// `write_to_path_*` does not consume the `package`, allowing for multiple writes, but only allows writing to
-// files other than the file from which the package was originally loaded.
+// `write_to_path_*` does not consume the `package`, allowing for multiple writes, but only allows writing
+// to files other than the file from which the package was originally loaded.
 package.to_path_dat("path/to/other/file.dat");
 
-// `write_into_path_*` consumes the `package`, but releases file system resources and allows overwriting the
-// file from which the package was originally loaded.
+// `write_into_path_*` consumes the `package`, but releases file system resources and allows overwriting
+// the file from which the package was originally loaded.
 package.write_into_path_dat(package, "path/to/file.dat");
 ```
 
