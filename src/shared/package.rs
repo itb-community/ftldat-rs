@@ -13,10 +13,10 @@ use crate::shared::entry::PackageEntry;
 
 /// Represents the internal structure of a package.
 ///
-/// These packages consist of a list of [entries](PackageEntry).
+/// These packages consist of a list of [`PackageEntries`](PackageEntry).
 #[derive(Debug)]
 pub struct Package {
-    /// Use a Vec as main [PackageEntry] storage; this way we retain the order in which the source
+    /// Use a Vec as main [`PackageEntry`] storage; this way we retain the order in which the source
     /// file originally stored its entries.
     entries: Vec<PackageEntry>,
     inner_path_to_entry_index: BTreeMap<String, usize>,
@@ -24,7 +24,7 @@ pub struct Package {
 
 impl Package {
     // region <Constructors>
-    /// Creates a new empty [Package].
+    /// Creates a new empty [`Package`].
     pub fn new() -> Package {
         Package {
             entries: Vec::new(),
@@ -32,7 +32,7 @@ impl Package {
         }
     }
 
-    /// Creates a new empty [Package], with a backing vector having at least the specified capacity.
+    /// Creates a new empty [`Package`], with a backing vector having at least the specified capacity.
     pub fn with_capacity(capacity: usize) -> Package {
         Package {
             entries: Vec::with_capacity(capacity),
@@ -40,48 +40,48 @@ impl Package {
         }
     }
 
-    /// Reads the file at the specified path using DAT format, and creates a [Package] instance.
+    /// Reads the file at the specified path using DAT format, and creates a [`Package`] instance.
     ///
     /// This function memory-maps the file, whose lifetime is as long as the longest-lived entry
     /// read from this file.
-    /// If the [Package] instance created by this function goes out of scope, and its entries are
+    /// If the [`Package`] instance created by this function goes out of scope, and its entries are
     /// not referenced anywhere, the memory map will be correctly disposed.
     pub fn from_path_dat<P: AsRef<Path>>(source_path: P) -> Result<Package, PackageReadError> {
         Package::from_path(source_path, DatReader())
     }
 
-    /// Reads the specified file using DAT format, and creates a [Package] instance.
+    /// Reads the specified file using DAT format, and creates a [`Package`] instance.
     ///
     /// This function memory-maps the file, whose lifetime is as long as the longest-lived entry
     /// read from this file.
-    /// If the [Package] instance created by this function goes out of scope, and its entries are
+    /// If the [`Package`] instance created by this function goes out of scope, and its entries are
     /// not referenced anywhere, the memory map will be correctly disposed.
     pub fn from_file_dat(file: File) -> Result<Package, PackageReadError> {
         Package::from_file(file, DatReader())
     }
 
-    /// Reads the file at the specified path using PKG format, and creates a [Package] instance.
+    /// Reads the file at the specified path using PKG format, and creates a [`Package`] instance.
     ///
     /// This function memory-maps the file, whose lifetime is as long as the longest-lived entry
     /// read from this file.
-    /// If the [Package] instance created by this function goes out of scope, and its entries are
+    /// If the [`Package`] instance created by this function goes out of scope, and its entries are
     /// not referenced anywhere, the memory map will be correctly disposed.
     pub fn from_path_pkg<P: AsRef<Path>>(source_path: P) -> Result<Package, PackageReadError> {
         Package::from_path(source_path, PkgReader())
     }
 
-    /// Reads the specified file using PKG format, and creates a [Package] instance.
+    /// Reads the specified file using PKG format, and creates a [`Package`] instance.
     ///
     /// This function memory-maps the file, whose lifetime is as long as the longest-lived entry
     /// read from this file.
-    /// If the [Package] instance created by this function goes out of scope, and its entries are
+    /// If the [`Package`] instance created by this function goes out of scope, and its entries are
     /// not referenced anywhere, the memory map will be correctly disposed.
     pub fn from_file_pkg(file: File) -> Result<Package, PackageReadError> {
         Package::from_file(file, PkgReader())
     }
 
-    /// Reads the file at the specified path using format provided by the specified [PackageReader],
-    /// and creates a [Package] instance.
+    /// Reads the file at the specified path using format provided by the specified [`PackageReader`],
+    /// and creates a [`Package`] instance.
     pub fn from_path<P: AsRef<Path>, T: PackageReader>(source_path: P, reader: T) -> Result<Package, PackageReadError> {
         let file = File::options()
             .read(true)
@@ -89,8 +89,8 @@ impl Package {
         Package::from_file(file, reader)
     }
 
-    /// Reads the specified file using format provided by the specified [PackageReader], and creates
-    /// a [Package] instance.
+    /// Reads the specified file using format provided by the specified [`PackageReader`], and creates
+    /// a [`Package`] instance.
     pub fn from_file<T: PackageReader>(file: File, reader: T) -> Result<Package, PackageReadError> {
         reader.read_package_from_file(file)
     }
@@ -98,10 +98,10 @@ impl Package {
 
     // region <Output>
     // region <DAT>
-    /// Consumes and writes this [Package] in DAT format to file at the specified path.
+    /// Consumes and writes this [`Package`] in DAT format to file at the specified path.
     ///
-    /// This method consumes the [Package], therefore this method can overwrite the file from which
-    /// the [Package] was originally created, even if the [PackageWriter] implementation locks file
+    /// This method consumes the [`Package`], therefore this method can overwrite the file from which
+    /// the [`Package`] was originally created, even if the [`PackageWriter`] implementation locks file
     /// system resources.
     ///
     /// For a non-consuming variant, see [Package::to_path_dat] instead.
@@ -109,10 +109,10 @@ impl Package {
         self.into_path(destination_path, DatWriter())
     }
 
-    /// Consumes and writes this [Package] in DAT format to the specified output.
+    /// Consumes and writes this [`Package`] in DAT format to the specified output.
     ///
-    /// This method consumes the [Package], therefore this method can overwrite the file from which
-    /// the [Package] was originally created, even if the [PackageWriter] implementation locks file
+    /// This method consumes the [`Package`], therefore this method can overwrite the file from which
+    /// the [`Package`] was originally created, even if the [`PackageWriter`] implementation locks file
     /// system resources.
     ///
     /// For a non-consuming variant, see [Package::to_output_dat] instead.
@@ -120,22 +120,22 @@ impl Package {
         self.into_output(output, DatWriter())
     }
 
-    /// Writes this [Package] in DAT format to file at the specified path.
+    /// Writes this [`Package`] in DAT format to file at the specified path.
     ///
-    /// This method does not consume the [Package], so if the [PackageWriter] implementation locks
+    /// This method does not consume the [`Package`], so if the [`PackageWriter`] implementation locks
     /// file system resources, this method will not be able to overwrite the file from which the
-    /// [Package] was originally created.
+    /// [`Package`] was originally created.
     ///
     /// If this is what you want to do, use [Package::into_path_dat] instead.
     pub fn to_path_dat<P: AsRef<Path>>(&self, destination_path: P) -> Result<(), PackageWriteError> {
         self.to_path(destination_path, DatWriter())
     }
 
-    /// Writes this [Package] in DAT format to the specified output.
+    /// Writes this [`Package`] in DAT format to the specified output.
     ///
-    /// This method does not consume the [Package], so if the [PackageWriter] implementation locks
+    /// This method does not consume the [`Package`], so if the [`PackageWriter`] implementation locks
     /// file system resources, this method will not be able to overwrite the file from which the
-    /// [Package] was originally created.
+    /// [`Package`] was originally created.
     ///
     /// If this is what you want to do, use [Package::into_output_dat] instead.
     pub fn to_output_dat<O: Write + Seek>(&self, output: O) -> Result<(), PackageWriteError> {
@@ -144,10 +144,10 @@ impl Package {
     // endregion
 
     // region <PKG>
-    /// Consumes and writes this [Package] in PKG format to file at the specified path.
+    /// Consumes and writes this [`Package`] in PKG format to file at the specified path.
     ///
-    /// This method consumes the [Package], therefore this method can overwrite the file from which
-    /// the [Package] was originally created, even if the [PackageWriter] implementation locks file
+    /// This method consumes the [`Package`], therefore this method can overwrite the file from which
+    /// the [`Package`] was originally created, even if the [`PackageWriter`] implementation locks file
     /// system resources.
     ///
     /// For a non-consuming variant, see [Package::to_path_pkg] instead.
@@ -155,10 +155,10 @@ impl Package {
         self.into_path(destination_path, PkgWriter())
     }
 
-    /// Consumes and writes this [Package] in PKG format to the specified output.
+    /// Consumes and writes this [`Package`] in PKG format to the specified output.
     ///
-    /// This method consumes the [Package], therefore this method can overwrite the file from which
-    /// the [Package] was originally created, even if the [PackageWriter] implementation locks file
+    /// This method consumes the [`Package`], therefore this method can overwrite the file from which
+    /// the [`Package`] was originally created, even if the [`PackageWriter`] implementation locks file
     /// system resources.
     ///
     /// For a non-consuming variant, see [Package::to_output_pkg] instead.

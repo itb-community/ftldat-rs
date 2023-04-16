@@ -10,7 +10,7 @@ use memmap2::Mmap;
 #[allow(unused)]
 use crate::Package;
 
-/// Represents a file entry in a [Package].
+/// Represents a file entry in a [`Package`].
 ///
 /// These entries consist basically only of the file's path within the package (here called an
 /// `inner_path`), and a reference to the file's content.
@@ -20,7 +20,7 @@ pub struct PackageEntry {
     source: DataSource,
 }
 
-/// Represents the source of a [PackageEntry]'s content.
+/// Represents the source of a [`PackageEntry`]'s content.
 /// Where possible, each entry's content is not stored in-memory, but rather sourced from
 /// the source package from which the entry was originally read, or from a file on disk,
 /// and read only when this data is actually needed.
@@ -32,9 +32,9 @@ enum DataSource {
 }
 
 impl PackageEntry {
-    /// Constructs an [PackageEntry] from the given `inner_path` and file at the specified `path`.
+    /// Constructs an [`PackageEntry`] from the given `inner_path` and file at the specified `path`.
     ///
-    /// * `inner_path` - path under which the file will be stored within the [Package].
+    /// * `inner_path` - path under which the file will be stored within the [`Package`].
     /// * `path` - path to the file that will be read to populate this entry's content.
     pub fn from_file<S: AsRef<str>, P: AsRef<Path>>(
         inner_path: S,
@@ -46,9 +46,9 @@ impl PackageEntry {
         }
     }
 
-    /// Constructs an [PackageEntry] from the given `inner_path`, memory map, offset and length
+    /// Constructs an [`PackageEntry`] from the given `inner_path`, memory map, offset and length
     ///
-    /// * `inner_path` - path under which the file will be stored within the [Package].
+    /// * `inner_path` - path under which the file will be stored within the [`Package`].
     /// * `mmap` - memory map of the file from which the file's content will be read.
     /// * `offset` - offset to the file's content within the memory mapped file.
     /// * `length` - length of the file's content within the memory mapped file.
@@ -68,9 +68,9 @@ impl PackageEntry {
         }
     }
 
-    /// Constructs an [PackageEntry] from the given `inner_path` and text `content`.
+    /// Constructs an [`PackageEntry`] from the given `inner_path` and text `content`.
     ///
-    /// * `inner_path` - path under which the file will be stored within the [Package].
+    /// * `inner_path` - path under which the file will be stored within the [`Package`].
     /// * `content` - textual content of the file.
     pub fn from_string<S: AsRef<str>, C: AsRef<str> + Into<Vec<u8>>>(
         inner_path: S,
@@ -82,9 +82,9 @@ impl PackageEntry {
         )
     }
 
-    /// Constructs an [PackageEntry] from the given `inner_path` and binary `content`.
+    /// Constructs an [`PackageEntry`] from the given `inner_path` and binary `content`.
     ///
-    /// * `inner_path` - path under which the file will be stored within the [Package].
+    /// * `inner_path` - path under which the file will be stored within the [`Package`].
     /// * `content` - binary content of the file.
     pub fn from_byte_array<S: AsRef<str>>(
         inner_path: S,
