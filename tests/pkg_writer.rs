@@ -56,7 +56,7 @@ mod test_pkg_writer {
 
         // Execute
         let result = package.into_path_pkg(tmp_path);
-        println!("{}", tmp_path);
+
         assert!(result.is_ok());
         let package = Package::from_path_pkg(tmp_path).unwrap();
         let order_after_write = package.inner_paths();

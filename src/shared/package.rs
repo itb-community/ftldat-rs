@@ -207,11 +207,7 @@ impl Package {
             .truncate(true)
             .open(&destination_path_tmp)?;
 
-        println!("exists: {}", destination_path_tmp.exists());
-
         self.into_output(BufWriter::new(file), writer)?;
-
-        println!("exists: {}", destination_path_tmp.exists());
 
         std::fs::remove_file(destination_path)?;
         std::fs::rename(destination_path_tmp, destination_path)?;

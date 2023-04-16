@@ -19,7 +19,6 @@ mod tests {
     #[test]
     fn calculated_path_hash_is_correct_for_sample_1() {
         let result = calculate_path_hash("test1.txt");
-        println!("{:08X?}", result);
         assert_eq!(157232055, result);
     }
 
