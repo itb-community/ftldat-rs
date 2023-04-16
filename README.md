@@ -10,7 +10,9 @@ This library also supports the PKG format used by FTL after version 1.6.1.
 Opening a package is fairly straightforward:
 
 ```rs
-let package = ftldat::dat::read_package_from_path("path/to/file.dat");
+use ftldat::Package;
+
+let package = Package::from_path_dat("path/to/file.dat");
 
 # Can now query the package's contents, list or iterate...
 println!("Number of entries: {}", &package.entry_count());
@@ -29,7 +31,9 @@ an entry's content.
 
 Packages can be modified to add, replace, or remove entries:
 ```rs
-let mut package = ftldat::dat::read_package_from_path("path/to/file.dat");
+use ftldat::{Package, PackageEntry};
+
+let mut package = Package::from_path_dat("path/to/file.dat");
 
 # `add_entry` will only add the entry if the package does NOT already contain an entry at the specified path (test.txt).
 # Otherwise, an error is returned.
@@ -72,22 +76,25 @@ let entry = PackageEntry::from_memory_mapped_file(
 
 Packages can be written back to a file:
 ```rs
-let package = ftldat::dat::read_package_from_path("path/to/file.dat");
+use ftldat::Package;
 
-# `write_package_to_path` does not consume the `package`, allowing for multiple writes, but only allows writing to
+let package = Package::from_path_dat("path/to/file.dat");
+
+# `write_to_path_*` does not consume the `package`, allowing for multiple writes, but only allows writing to
 # files other than the file from which the package was originally loaded.
-ftldat::dat::write_package_to_path(&package, "path/to/other/file.dat");
+package.to_path_dat("path/to/other/file.dat");
 
-# `write_package_into_path` consumes the `package`, but releases file system resources and allows overwriting the
+# `write_into_path_*` consumes the `package`, but releases file system resources and allows overwriting the
 # file from which the package was originally loaded.
-ftldat::dat::write_package_into_path(package, "path/to/file.dat");
+package.write_into_path_dat(package, "path/to/file.dat");
 ```
 
 Contents of the package can also be extracted:
 ```rs
-let package = ftldat::dat::read_package_from_path("path/to/file.dat");
+use ftldat::Package;
 
-package.extract("directory/to/extract/contents/");
+let package = Package::from_path_dat("path/to/file.dat");
+package.extract("destination/directory/");
 ```
 
 # Areas to Improve
