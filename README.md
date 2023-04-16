@@ -5,8 +5,6 @@ by the games [Into the Breach](https://subsetgames.com/itb.html) and [Faster tha
 
 This library also supports the PKG format used by FTL after version 1.6.1.
 
-This library is intended to be loaded and interfaced with via Lua scripts.
-
 # Usage
 
 Opening a package is fairly straightforward:
