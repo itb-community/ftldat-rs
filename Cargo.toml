@@ -1,12 +1,12 @@
 [package]
 name = "ftldat"
 version = "0.1.0"
-authors = [
-    "kartoFlane"
-]
+authors = [ "kartoFlane <tbachminski@gmail.com>" ]
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "Rust implementation of FTLDat - a simple library for unpacking and repacking of .dat files, which are used by the games Into the Breach and Faster than Light."
+license = "MIT"
+keywords = [ "lua", "modding" ]
+repository = "https://github.com/itb-community/ftldat-rs"
 
 [lib]
 name = "ftldat"
