@@ -14,15 +14,15 @@ use ftldat::Package;
 
 let package = Package::from_path_dat("path/to/file.dat");
 
-# Can now query the package's contents, list or iterate...
+// Can now query the package's contents, list or iterate...
 println!("Number of entries: {}", &package.entry_count());
 println!("Does the package contain a file at path 'test.txt'? {}", &package.entry_exists("test.txt"));
 
-# List paths of all files within the package
+// List paths of all files within the package
 let inner_paths = package.inner_paths();
 
 for entry in package.iter() {
-    # Do something with each entry
+    // Do something with each entry
 }
 ```
 
@@ -35,37 +35,37 @@ use ftldat::{Package, PackageEntry};
 
 let mut package = Package::from_path_dat("path/to/file.dat");
 
-# `add_entry` will only add the entry if the package does NOT already contain an entry at the specified path (test.txt).
-# Otherwise, an error is returned.
+// `add_entry` will only add the entry if the package does NOT already contain an entry at the specified path (test.txt).
+// Otherwise, an error is returned.
 package.add_entry(PackageEntry::from_string("test.txt", "My text file's content."));
 
-# `put_entry` will overwrite the entry at the specified path (test2.txt) with the provided entry.
+// `put_entry` will overwrite the entry at the specified path (test2.txt) with the provided entry.
 package.put_entry(PackageEntry::from_string("test2.txt", "Lorem ipsum dolor sit amet"));
 
-# Remove individual entry
+// Remove individual entry
 package.remove_entry("test.txt");
 
-# Remove all entries
+// Remove all entries
 package.clear();
 ```
 
 Entries can be created in a few ways:
 ```rs
-# Directly from a string, mostly useful for testing (functionally the same as in-memory byte array)
+// Directly from a string, mostly useful for testing (functionally the same as in-memory byte array)
 let entry = PackageEntry::from_string("file.txt", "Lorem ipsum dolor sit amet");
 
-# From a file on disk
+// From a file on disk
 let entry = PackageEntry::from_file("file.png", "path/to/file.png");
 
-# From an in-memory byte array
+// From an in-memory byte array
 let content = [0, 1, 2, 3];
 PackageEntry::from_byte_array("file.bin", content.into());
 
-# From a memory-mapped file
-let mmap = ...     # Reference to the memory map
+// From a memory-mapped file
+let mmap = ...     // Reference to the memory map
 let mmap_rc = Rc::new(mmap);
-let offset = ...   # Offset to the beginning of the entry's content within the memory-mapped file
-let length = ...   # Number of bytes that make up the entry's content
+let offset = ...   // Offset to the beginning of the entry's content within the memory-mapped file
+let length = ...   // Number of bytes that make up the entry's content
 let entry = PackageEntry::from_memory_mapped_file(
     "file.wav",
     mmap_rc.clone(),
@@ -80,12 +80,12 @@ use ftldat::Package;
 
 let package = Package::from_path_dat("path/to/file.dat");
 
-# `write_to_path_*` does not consume the `package`, allowing for multiple writes, but only allows writing to
-# files other than the file from which the package was originally loaded.
+// `write_to_path_*` does not consume the `package`, allowing for multiple writes, but only allows writing to
+// files other than the file from which the package was originally loaded.
 package.to_path_dat("path/to/other/file.dat");
 
-# `write_into_path_*` consumes the `package`, but releases file system resources and allows overwriting the
-# file from which the package was originally loaded.
+// `write_into_path_*` consumes the `package`, but releases file system resources and allows overwriting the
+// file from which the package was originally loaded.
 package.write_into_path_dat(package, "path/to/file.dat");
 ```
 
