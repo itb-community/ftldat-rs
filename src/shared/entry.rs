@@ -3,7 +3,12 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+
 use memmap2::Mmap;
+
+// Documentation imports
+#[allow(unused)]
+use crate::Package;
 
 /// Represents a file entry in a [Package].
 ///
@@ -73,7 +78,7 @@ impl PackageEntry {
     ) -> PackageEntry {
         PackageEntry::from_byte_array(
             inner_path,
-            content.into()
+            content.into(),
         )
     }
 

@@ -1,9 +1,11 @@
-mod shared;
-pub mod dat;
-pub mod pkg;
+pub use crate::shared::entry::PackageEntry;
+pub use crate::shared::package::Package;
+pub use crate::shared::reader::PackageReader;
+pub use crate::shared::writer::PackageWriter;
 
-pub use crate::shared::package::Package as Package;
-pub use crate::shared::entry::PackageEntry as PackageEntry;
+mod shared;
+mod dat;
+mod pkg;
 
 pub mod error {
     pub use crate::shared::error::*;

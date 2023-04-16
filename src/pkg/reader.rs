@@ -1,12 +1,11 @@
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom};
-use std::path::Path;
 use std::rc::Rc;
 
 use byteorder::{BigEndian, ReadBytesExt};
 use memmap2::Mmap;
 
-use crate::{Package, PackageEntry};
+use crate::{Package, PackageEntry, PackageReader};
 use crate::pkg::constants::{ENTRY_SIZE, INDEX_SIZE, PKG_DEFLATED, PKG_SIGNATURE};
 use crate::pkg::error::{EntryReadError, FileCorruptError};
 use crate::pkg::shared::calculate_path_hash;
@@ -30,72 +29,66 @@ use crate::shared::error::PackageReadError;
 // - padding for 4-byte alignment (u8/u16/u24, depending on length of path region)
 // - Entries / data region (`Entry.data_size` x `entry_count`, until EOF)
 
-/// Reads and creates a [Package] instance out of the specified [Path], using .dat format.
-pub fn read_package_from_path<P: AsRef<Path>>(source_path: P) -> Result<Package, PackageReadError> {
-    let file = File::options()
-        .read(true)
-        .open(source_path)
-        .expect("Failed to open the file for reading");
-    read_package_from_file(file)
-}
+pub struct PkgReader();
 
-/// Constructs a [Package] instance from data in the given file, consuming it in the process.
-pub fn read_package_from_file(file: File) -> Result<Package, PackageReadError> {
-    let mut result = Package::new();
+impl PackageReader for PkgReader {
+    fn read_package_from_file(&self, file: File) -> Result<Package, PackageReadError> {
+        let mut result = Package::new();
 
-    let mmap = unsafe {
-        Mmap::map(&file)
-    }?;
+        let mmap = unsafe {
+            Mmap::map(&file)
+        }?;
 
-    let mut cursor = Cursor::new(&mmap[..INDEX_SIZE as usize]);
-    for expected_signature_byte in PKG_SIGNATURE {
-        let signature_byte = cursor.read_u8()?;
-        if signature_byte != expected_signature_byte {
-            return Err(FileCorruptError::SignatureMismatchError {
-                expected: expected_signature_byte,
-                actual: signature_byte,
+        let mut cursor = Cursor::new(&mmap[..INDEX_SIZE as usize]);
+        for expected_signature_byte in PKG_SIGNATURE {
+            let signature_byte = cursor.read_u8()?;
+            if signature_byte != expected_signature_byte {
+                return Err(FileCorruptError::SignatureMismatchError {
+                    expected: expected_signature_byte,
+                    actual: signature_byte,
+                }.into());
+            }
+        }
+
+        let index_size = cursor.read_u16::<BigEndian>()?;
+        if index_size != INDEX_SIZE {
+            return Err(FileCorruptError::HeaderSizeMismatchError {
+                expected: INDEX_SIZE,
+                actual: index_size,
             }.into());
         }
+
+        let entry_size = cursor.read_u16::<BigEndian>()?;
+        if entry_size != ENTRY_SIZE {
+            return Err(FileCorruptError::EntriesHeaderSizeMismatchError {
+                expected: ENTRY_SIZE,
+                actual: entry_size,
+            }.into());
+        }
+
+        let entry_count = cursor.read_u32::<BigEndian>()? as usize;
+        let path_region_size = cursor.read_u32::<BigEndian>()? as usize;
+        let path_region_offset = INDEX_SIZE as usize + (ENTRY_SIZE as usize * entry_count) as usize;
+
+        let mut cursor = Cursor::new(&mmap[INDEX_SIZE as usize..path_region_offset]);
+        let mut entry_builders: Vec<EntryBuilder> = Vec::with_capacity(entry_count);
+        for _ in 0..entry_count {
+            let entry_builder = EntryBuilder::read_entry_header(&mut cursor)?;
+            entry_builders.push(entry_builder);
+        }
+
+        let path_region_slice = mmap[path_region_offset .. path_region_offset + path_region_size].to_vec();
+        let mut cursor = Cursor::new(path_region_slice);
+
+        let mmap_rc = Rc::new(mmap);
+        for mut entry_builder in entry_builders {
+            entry_builder.read_inner_path(&mut cursor)?;
+            let entry = entry_builder.build(mmap_rc.clone());
+            result.add_entry(entry)?;
+        }
+
+        Ok(result)
     }
-
-    let index_size = cursor.read_u16::<BigEndian>()?;
-    if index_size != INDEX_SIZE {
-        return Err(FileCorruptError::HeaderSizeMismatchError {
-            expected: INDEX_SIZE,
-            actual: index_size,
-        }.into());
-    }
-
-    let entry_size = cursor.read_u16::<BigEndian>()?;
-    if entry_size != ENTRY_SIZE {
-        return Err(FileCorruptError::EntriesHeaderSizeMismatchError {
-            expected: ENTRY_SIZE,
-            actual: entry_size,
-        }.into());
-    }
-
-    let entry_count = cursor.read_u32::<BigEndian>()? as usize;
-    let path_region_size = cursor.read_u32::<BigEndian>()? as usize;
-    let path_region_offset = INDEX_SIZE as usize + (ENTRY_SIZE as usize * entry_count) as usize;
-
-    let mut cursor = Cursor::new(&mmap[INDEX_SIZE as usize..path_region_offset]);
-    let mut entry_builders: Vec<EntryBuilder> = Vec::with_capacity(entry_count);
-    for _ in 0..entry_count {
-        let entry_builder = EntryBuilder::read_entry_header(&mut cursor)?;
-        entry_builders.push(entry_builder);
-    }
-
-    let path_region_slice = mmap[path_region_offset .. path_region_offset + path_region_size].to_vec();
-    let mut cursor = Cursor::new(path_region_slice);
-
-    let mmap_rc = Rc::new(mmap);
-    for mut entry_builder in entry_builders {
-        entry_builder.read_inner_path(&mut cursor)?;
-        let entry = entry_builder.build(mmap_rc.clone());
-        result.add_entry(entry)?;
-    }
-
-    Ok(result)
 }
 
 struct EntryBuilder {

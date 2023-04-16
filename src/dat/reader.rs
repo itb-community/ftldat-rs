@@ -1,11 +1,11 @@
 use std::fs::File;
 use std::io::{Cursor, Read};
-use std::path::Path;
 use std::rc::Rc;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use memmap2::Mmap;
 use crate::dat::constants::INDEX_SIZE;
+use crate::PackageReader;
 use crate::shared::entry::PackageEntry;
 
 use crate::shared::error::PackageReadError;
@@ -22,49 +22,43 @@ use crate::shared::package::{Package};
 // - file name (`str_len` x u8)
 // - file content (`data_size` x u8)
 
-/// Reads and creates a [Package] instance out of the specified [Path], using .dat format.
-pub fn read_package_from_path<P: AsRef<Path>>(source_path: P) -> Result<Package, PackageReadError> {
-    let file = File::options()
-        .read(true)
-        .open(source_path)
-        .expect("Failed to open the file for reading");
-    read_package_from_input(file)
-}
+pub struct DatReader();
 
-/// Constructs a [Package] instance from data in the given file, consuming it in the process.
-pub fn read_package_from_input(file: File) -> Result<Package, PackageReadError> {
-    let mut result = Package::new();
+impl PackageReader for DatReader {
+    fn read_package_from_file(&self, file: File) -> Result<Package, PackageReadError> {
+        let mut result = Package::new();
 
-    let mmap = unsafe {
-        Mmap::map(&file)
-    }?;
+        let mmap = unsafe {
+            Mmap::map(&file)
+        }?;
 
-    let mut cursor = Cursor::new(&mmap[..INDEX_SIZE]);
-    let entry_count = cursor.read_u32::<LittleEndian>()? as usize;
+        let mut cursor = Cursor::new(&mmap[..INDEX_SIZE]);
+        let entry_count = cursor.read_u32::<LittleEndian>()? as usize;
 
-    // TODO: Skip offsets and simply read entries until EOF?
-    let entry_area_offset = INDEX_SIZE + entry_count * 4;
-    let mut cursor = Cursor::new(&mmap[INDEX_SIZE..entry_area_offset]);
-    let mut entry_offsets = Vec::with_capacity(entry_count);
-    for _ in 0..entry_count {
-        let entry_offset = cursor.read_u32::<LittleEndian>()?;
-        entry_offsets.push(entry_offset);
+        // TODO: Skip offsets and simply read entries until EOF?
+        let entry_area_offset = INDEX_SIZE + entry_count * 4;
+        let mut cursor = Cursor::new(&mmap[INDEX_SIZE..entry_area_offset]);
+        let mut entry_offsets = Vec::with_capacity(entry_count);
+        for _ in 0..entry_count {
+            let entry_offset = cursor.read_u32::<LittleEndian>()?;
+            entry_offsets.push(entry_offset);
+        }
+
+        let entry_builders: Vec<EntryBuilder> = entry_offsets.iter()
+            .map(|entry_offset| {
+                EntryBuilder::read_entry(&mmap, *entry_offset as usize)
+                    .expect("Failed to read entry")
+            })
+            .collect();
+
+        let mmap_rc = Rc::new(mmap);
+        for entry_builder in entry_builders {
+            let entry = entry_builder.build(mmap_rc.clone());
+            result.add_entry(entry)?;
+        }
+
+        Ok(result)
     }
-
-    let entry_builders: Vec<EntryBuilder> = entry_offsets.iter()
-        .map(|entry_offset| {
-            EntryBuilder::read_entry(&mmap, *entry_offset as usize)
-                .expect("Failed to read entry")
-        })
-        .collect();
-
-    let mmap_rc = Rc::new(mmap);
-    for entry_builder in entry_builders {
-        let entry = entry_builder.build(mmap_rc.clone());
-        result.add_entry(entry)?;
-    }
-
-    Ok(result)
 }
 
 struct EntryBuilder {

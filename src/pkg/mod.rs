@@ -1,5 +1,5 @@
-pub(crate) mod reader;
-pub(crate) mod writer;
+pub mod reader;
+pub mod writer;
 mod constants;
 mod shared;
 mod error;

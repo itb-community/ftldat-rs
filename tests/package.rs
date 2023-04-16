@@ -4,9 +4,9 @@ mod test_package {
 
     use tempfile::tempdir;
 
-    use ftldat::{Package, dat, PackageEntry};
+    use ftldat::{Package, PackageEntry};
 
-    const TEST_DAT_PATH: &str = "./tests-resources/test.dat";
+    const SOURCE_PATH: &str = "./tests-resources/test.dat";
 
     #[test]
     fn new_package_should_be_empty() {
@@ -79,7 +79,7 @@ mod test_package {
 
         // Execute
         package.put_entry(PackageEntry::from_string(
-            inner_path, content
+            inner_path, content,
         ));
 
         // Check
@@ -100,13 +100,13 @@ mod test_package {
         let content1 = "test";
 
         package.put_entry(PackageEntry::from_string(
-            inner_path, content1
+            inner_path, content1,
         ));
 
         // Execute
         let content2 = "test123";
         package.put_entry(PackageEntry::from_string(
-            inner_path, content2
+            inner_path, content2,
         ));
 
         // Check
@@ -134,7 +134,7 @@ mod test_package {
         let mut package = Package::new();
         let inner_path = "test";
         package.put_entry(PackageEntry::from_string(
-            inner_path, "test"
+            inner_path, "test",
         ));
 
         // Execute
@@ -161,7 +161,7 @@ mod test_package {
         let mut package = Package::new();
         let inner_path = "test";
         package.put_entry(PackageEntry::from_string(
-            inner_path, "test"
+            inner_path, "test",
         ));
 
         // Execute
@@ -178,7 +178,7 @@ mod test_package {
         let mut package = Package::new();
         let inner_path = "test";
         package.put_entry(PackageEntry::from_string(
-            inner_path, "test"
+            inner_path, "test",
         ));
 
         // Execute
@@ -222,7 +222,7 @@ mod test_package {
         let tmp_file = tempdir().unwrap();
         let tmp_path = tmp_file.path().to_str().unwrap();
 
-        let package = dat::read_package_from_path(TEST_DAT_PATH).unwrap();
+        let package = Package::from_path_dat(SOURCE_PATH).unwrap();
 
         // Execute
         let result = package.extract(tmp_path);
