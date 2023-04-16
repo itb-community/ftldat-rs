@@ -16,7 +16,7 @@ mod test_dat_writer {
         let tmp_path = tmp_file.path().to_str().unwrap();
 
         // Execute
-        let result = package.into_path_dat(tmp_path);
+        let result = package.to_path_dat(tmp_path);
 
         // Check
         assert!(result.is_ok());
@@ -37,7 +37,7 @@ mod test_dat_writer {
         package.put_entry(PackageEntry::from_string("test", "test123"));
 
         // Execute
-        let result = package.into_path_dat(tmp_path);
+        let result = package.to_path_dat(tmp_path);
 
         // Check
         assert!(result.is_ok());
