@@ -97,6 +97,11 @@ let package = Package::from_path_dat("path/to/file.dat");
 package.extract("destination/directory/");
 ```
 
+# License
+
+This project is licensed under **GPLv3**, as parts of it were initially informed by
+[Slipstream Mod Manager](https://github.com/Vhati/Slipstream-Mod-Manager)'s implementation
+
 # Areas to Improve
 
 Considering that this project served me as a way to familiarize myself with Rust, there's bound to be a lot of room for

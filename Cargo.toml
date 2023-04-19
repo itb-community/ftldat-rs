@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = [ "kartoFlane <tbachminski@gmail.com>" ]
 edition = "2021"
 description = "Rust implementation of FTLDat - a simple library for unpacking and repacking of .dat files, which are used by the games Into the Breach and Faster than Light."
-license = "MIT"
+license = "GPL-3.0"
 keywords = [ "lua", "modding" ]
 repository = "https://github.com/itb-community/ftldat-rs"
 
